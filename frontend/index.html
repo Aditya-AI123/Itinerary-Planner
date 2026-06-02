@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Itinerary Planner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      font-size: 15px;
+      background: #f4f4f4;
+      color: #222;
+      min-height: 100vh;
+      padding: 32px 16px 48px;
+    }
+
+    .card {
+      max-width: 580px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 32px 28px;
+    }
+
+    h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 24px; }
+
+    .field { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 0.87rem;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 0.9rem;
+      color: #222;
+      background: #fff;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #2563eb; }
+    textarea { resize: vertical; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 480px) { .row { grid-template-columns: 1fr; } }
+
+    .stepper { display: flex; align-items: center; gap: 10px; }
+    .stepper button {
+      width: 30px; height: 30px;
+      border: 1px solid #ccc; border-radius: 4px;
+      background: #f7f7f7; font-size: 1rem; cursor: pointer;
+    }
+    .stepper button:disabled { opacity: 0.35; cursor: not-allowed; }
+    .stepper span { min-width: 24px; text-align: center; font-weight: 600; }
+
+    .chip-group { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip-group label {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 12px; border: 1px solid #ccc; border-radius: 20px;
+      font-size: 0.82rem; cursor: pointer; background: #f9f9f9;
+      font-weight: 400;
+    }
+    .chip-group label:has(input:checked) {
+      background: #eff6ff; border-color: #2563eb; color: #1d4ed8; font-weight: 500;
+    }
+
+    .radio-group { display: flex; gap: 18px; }
+    .radio-group label { display: flex; align-items: center; gap: 5px; font-weight: 400; cursor: pointer; }
+
+    .hidden { display: none; }
+
+    .error { font-size: 0.78rem; color: #dc2626; margin-top: 3px; display: none; }
+    .error.show { display: block; }
+
+    .info { font-size: 0.82rem; color: #166534; margin-top: 4px; }
+
+    hr { border: none; border-top: 1px solid #eee; margin: 20px 0; }
+
+    button[type="submit"] {
+      width: 100%; padding: 10px;
+      background: #2563eb; color: #fff;
+      border: none; border-radius: 5px;
+      font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; margin-top: 8px;
+    }
+    button[type="submit"]:hover { background: #1d4ed8; }
+
+    .success {
+      text-align: center; padding: 40px 20px;
+    }
+    .success .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .success h2 { font-size: 1.2rem; margin-bottom: 8px; }
+    .success p { color: #555; font-size: 0.9rem; }
+    .btn-reset {
+      margin-top: 16px; padding: 8px 20px;
+      background: #f3f4f6; border: 1px solid #ccc;
+      border-radius: 5px; cursor: pointer; font-size: 0.88rem;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Form -->
+  <div id="form-view">
+    <h1>🗺️ Trip Preferences</h1>
+
+    <div class="field">
+      <label for="destination">Destination *</label>
+      <select id="destination">
+        <option value="" disabled selected>Loading cities…</option>
+      </select>
+      <div class="error" id="err-dest">Please select a destination.</div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="startDate">Start Date *</label>
+        <input type="date" id="startDate" />
+        <div class="error" id="err-start">Required.</div>
+      </div>
+      <div class="field">
+        <label for="endDate">End Date *</label>
+        <input type="date" id="endDate" />
+        <div class="error" id="err-end">Must be after start date.</div>
+      </div>
+    </div>
+    <div class="info hidden" id="duration-info"></div>
+
+    <hr />
+
+    <div class="row">
+      <div class="field">
+        <label>Adults</label>
+        <div class="stepper">
+          <button type="button" id="adults-dec" onclick="change('adults',-1)" disabled>−</button>
+          <span id="adults-val">1</span>
+          <button type="button" onclick="change('adults',1)">+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Children</label>
+        <div class="stepper">
+          <button type="button" id="children-dec" onclick="change('children',-1)" disabled>−</button>
+          <span id="children-val">0</span>
+          <button type="button" onclick="change('children',1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field hidden" id="age-field">
+      <label>Children Age Groups</label>
+      <div class="chip-group">
+        <label><input type="checkbox" name="childAge" value="Toddler (0–3)" /> Toddler (0–3)</label>
+        <label><input type="checkbox" name="childAge" value="Kids (4–10)" /> Kids (4–10)</label>
+        <label><input type="checkbox" name="childAge" value="Teens (11–17)" /> Teens (11–17)</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="groupType">Group Type</label>
+      <select id="groupType">
+        <option value="solo">Solo</option>
+        <option value="couple">Couple</option>
+        <option value="group">Group</option>
+      </select>
+    </div>
+
+    <hr />
+
+    <div class="field">
+      <label>Trip Type * <span style="font-weight:400;color:#999;font-size:0.8rem">(select all that apply)</span></label>
+      <div class="chip-group" id="tripTypes">
+        <label><input type="checkbox" name="tripType" value="Relaxing" /> Relaxing</label>
+        <label><input type="checkbox" name="tripType" value="Adventure" /> Adventure</label>
+        <label><input type="checkbox" name="tripType" value="Thrill" /> Thrill</label>
+        <label><input type="checkbox" name="tripType" value="Cultural" /> Cultural</label>
+        <label><input type="checkbox" name="tripType" value="Foodie" /> Foodie</label>
+        <label><input type="checkbox" name="tripType" value="Nature" /> Nature</label>
+        <label><input type="checkbox" name="tripType" value="Spiritual" /> Spiritual</label>
+        <label><input type="checkbox" name="tripType" value="Family" /> Family</label>
+      </div>
+      <div class="error" id="err-trip">Please select at least one trip type.</div>
+    </div>
+
+    <hr />
+
+    <div class="field">
+      <label>Accommodation already booked?</label>
+      <div class="radio-group">
+        <label><input type="radio" name="accBooked" value="yes" onchange="toggleAcc(true)" /> Yes</label>
+        <label><input type="radio" name="accBooked" value="no" onchange="toggleAcc(false)" checked /> No</label>
+      </div>
+    </div>
+
+    <div class="field hidden" id="acc-field">
+      <label for="accAddress">Accommodation Address</label>
+      <textarea id="accAddress" rows="2" placeholder="Hotel name, address..."></textarea>
+    </div>
+
+    <button type="submit" onclick="submit()">Save Preferences &amp; Rate Places →</button>
+  </div>
+
+</div>
+
+<script>
+  const count = { adults: 1, children: 0 };
+
+  // Load cities from database
+  (async () => {
+    const sel = document.getElementById('destination');
+    try {
+      const res = await fetch('../data/places_database.json');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const db = await res.json();
+      const cities = (db.cities || []).sort((a, b) => a.city_name.localeCompare(b.city_name));
+      sel.innerHTML = '<option value="" disabled selected>Select a city…</option>' +
+        cities.map(c => `<option value="${c.city_slug}" data-name="${c.city_name}">${c.city_name}${c.country ? ', ' + c.country.split(',').pop().trim() : ''}</option>`).join('');
+    } catch (err) {
+      sel.innerHTML = '<option value="" disabled selected>⚠ Could not load cities (run via server)</option>';
+      console.error('Failed to load cities:', err);
+    }
+  })();
+
+  // Set min date to today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('startDate').min = today;
+
+  // Date change handler
+  ['startDate','endDate'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+      const s = document.getElementById('startDate').value;
+      const e = document.getElementById('endDate').value;
+      document.getElementById('endDate').min = s || today;
+      const nights = s && e ? Math.floor((new Date(e)-new Date(s))/86400000) : 0;
+      const el = document.getElementById('duration-info');
+      if (nights > 0) { el.textContent = nights + ' night(s) / ' + (nights+1) + ' days'; el.classList.remove('hidden'); }
+      else el.classList.add('hidden');
+    });
+  });
+
+  // Steppers
+  function change(key, d) {
+    count[key] = Math.max(key==='adults'?1:0, count[key]+d);
+    document.getElementById(key+'-val').textContent = count[key];
+    document.getElementById(key+'-dec').disabled = count[key] <= (key==='adults'?1:0);
+    if (key==='children') document.getElementById('age-field').classList.toggle('hidden', count.children===0);
+    if (key==='adults') {
+      const s = document.getElementById('groupType');
+      s.value = count.adults===1?'solo':count.adults===2?'couple':'group';
+    }
+  }
+
+  // Accommodation toggle
+  function toggleAcc(show) {
+    document.getElementById('acc-field').classList.toggle('hidden', !show);
+  }
+
+  // Submit
+  function submit() {
+    let ok = true;
+    const destSel = document.getElementById('destination');
+    const dest = destSel.value;
+    const destName = destSel.options[destSel.selectedIndex]?.dataset?.name || dest;
+    const s = document.getElementById('startDate').value;
+    const e = document.getElementById('endDate').value;
+    const trips = [...document.querySelectorAll('input[name="tripType"]:checked')].map(x=>x.value);
+
+    show('err-dest', !dest); if (!dest) ok = false;
+    show('err-start', !s);   if (!s) ok = false;
+    const dateOk = s && e && e > s;
+    show('err-end', !dateOk); if (!dateOk) ok = false;
+    show('err-trip', trips.length===0); if (!trips.length) ok = false;
+
+    if (!ok) return;
+
+    const booked = document.querySelector('input[name="accBooked"]:checked')?.value === 'yes';
+    const data = {
+      destination: destName,
+      citySlug: dest,
+      startDate: s,
+      endDate: e,
+      tripDurationNights: Math.floor((new Date(e)-new Date(s))/86400000),
+      numAdults: count.adults,
+      numChildren: count.children,
+      childrenAgeGroups: [...document.querySelectorAll('input[name="childAge"]:checked')].map(x=>x.value),
+      groupType: document.getElementById('groupType').value,
+      tripTypes: trips,
+      accommodationBooked: booked,
+      accommodationAddress: booked ? document.getElementById('accAddress').value.trim() : '',
+    };
+
+    localStorage.setItem('itinerary_preferences', JSON.stringify(data));
+    console.log('Saved preferences:', data);
+    window.location.href = '/frontend/swipe.html';
+  }
+
+  function show(id, val) { document.getElementById(id).classList.toggle('show', val); }
+
+  function reset() {
+    localStorage.removeItem('itinerary_preferences');
+    location.reload();
+  }
+</script>
+</body>
+</html>

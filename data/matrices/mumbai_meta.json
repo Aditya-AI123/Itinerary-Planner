@@ -1,0 +1,367 @@
+{
+  "city_slug": "mumbai",
+  "city_name": "Mumbai",
+  "computed_at": "2026-05-31T16:58:57.020961+00:00",
+  "total_places": 50,
+  "mode": "driving",
+  "unit": "meters",
+  "no_route_value": -1.0,
+  "place_ids": [
+    "ChIJ4_VJNw7J5zsRSzBPq9dmTqA",
+    "ChIJQYwuhTXJ5zsRLqhEWREwlcA",
+    "ChIJoTfKOTXP5zsRRzOdCGjrCqQ",
+    "ChIJw-tR2MDO5zsRKWNSFGmHYcw",
+    "ChIJU3mdPpXJ5zsRzGEmdI3eESg",
+    "ChIJoVupLi3R5zsRkUst6fWGNzw",
+    "ChIJdZ1gmkDJ5zsR-ntV50Ucp9A",
+    "ChIJvw5nj4i35zsRySXAdJgWmLM",
+    "ChIJ0T445WzO5zsRYt1jJFF6DOI",
+    "ChIJJ7H46sPR5zsRU5I-VRAm50Q",
+    "ChIJs4Iw3cLR5zsRA8zYO4MC2xU",
+    "ChIJrVwNOsfR5zsRPHOcIKclCsc",
+    "ChIJEREVxY635zsRxdoct6BPVUo",
+    "ChIJVVVhWRPI5zsREwcf4Byhf0c",
+    "ChIJOW5d0SLR5zsRdOb864OWRxg",
+    "ChIJParfYWvJ5zsRJE5FPuMonFo",
+    "ChIJCTBgusPR5zsR9jlWzqv4C3Y",
+    "ChIJw3rpD-HN5zsRGYkrTonj-Rk",
+    "ChIJlYJEjLOw5zsRAwbz1s5XQN4",
+    "ChIJ7ZgINYzO5zsRqQBKogByTGY",
+    "ChIJn4u374fI5zsRCkcZMZzJnZ8",
+    "ChIJG8VDYIzO5zsRqlIdGnKIkkY",
+    "ChIJbdF34ea55zsRX7kiabN6Z_U",
+    "ChIJqxxYL9nJ5zsR3FFhv71GZck",
+    "ChIJ2ejgLw7O5zsRkvYF3A5M7tc",
+    "ChIJo49oV-rJ5zsRsvalI8ESNnw",
+    "ChIJr3COQlvO5zsRBS4MFGze73k",
+    "ChIJu1252lvI5zsR14nH1NzDkTY",
+    "ChIJVUOesI_O5zsR3dYGhd70xzc",
+    "ChIJBZWe1sPR5zsRzh5wXAiDNwM",
+    "ChIJq8BfSdvR5zsRZn_7hsntjJc",
+    "ChIJAQVwLhqk5zsRHVypHYByq20",
+    "ChIJo49oV-rJ5zsRvNAzcQLkwO8",
+    "ChIJ____vwe35zsRa78RefzEyWo",
+    "ChIJSW6EGQ_O5zsRv8mYUqj-ntw",
+    "ChIJnz0di8iw5zsRz-Ko2mndITY",
+    "ChIJn079zr_R5zsR3Ghy0UQ2dCM",
+    "ChIJRcmQYUHP5zsRu8k34sDz00w",
+    "ChIJWSY7GADN5zsRfKe7nmI2bPE",
+    "ChIJqTRtXADP5zsRoIbPmdhFAiA",
+    "ChIJOfSDbgDN5zsRKwoh57-yUOc",
+    "ChIJd-G2HwDJ5zsRTrJrA_ESL6U",
+    "ChIJA2jKWL-z5zsRplEF3q4lpBg",
+    "ChIJPXZw7Ma35zsR9ISbMFG5nto",
+    "ChIJn3Q-5QnO5zsRmouUzzMGp5Q",
+    "ChIJxTKCwFe35zsRkRW_r8supM8",
+    "ChIJR9iTOazD5zsR2oNpDOilOKc",
+    "ChIJL5TDdCDI5zsR145Oq9FIrCA",
+    "ChIJjft6v-LJ5zsRj8jVeqWAl14",
+    "ChIJ2e6HD0ew5zsRYTWdMC_8G48"
+  ],
+  "place_names": [
+    "Painted Rhythm Art Gallery",
+    "𝐉𝐮𝐠𝐚𝐚𝐝𝐗𝐭𝐫𝐞𝐦𝐞 𝐀𝐝𝐯𝐞𝐧𝐭𝐮𝐫𝐞 𝐒𝐩𝐨𝐫𝐭𝐬",
+    "Royal Halls NSCI - Luxurious Banquet Hall | Exhibition Hall| Marriage Hall | Corporate Event Hall in Worli, Mumbai",
+    "Shree Siddhivinayak Temple",
+    "Saffron",
+    "Paradox Museum Mumbai",
+    "Basilica of Our Lady of the Mount (Bandra, Mumbai)",
+    "Illusion Adventures",
+    "Shri Mahalakshmi Devi Temple, Mumbai",
+    "Chhatrapati Shivaji Maharaj Vastu Sangrahalaya",
+    "Rajabai Clock Tower",
+    "Gateway Of India Mumbai",
+    "BNHS Nature Reserve",
+    "Bombay To Barcelona Library Cafe",
+    "Street Food stalls",
+    "Treks and Trails",
+    "Jehangir Art Gallery",
+    "Priyadarshini Park",
+    "Shilonda Trail",
+    "The Bombay Canteen",
+    "Phoenix Marketcity",
+    "Phoenix Palladium",
+    "Kanheri Caves",
+    "Bhavan's Nature And Adventure Centre",
+    "The Royal Opera House, Mumbai",
+    "Prithvi Theatre",
+    "Dr. Bhau Daji Lad Museum",
+    "Gallops Restaurant",
+    "AER",
+    "National Gallery of Modern Art",
+    "Horniman Circle Garden",
+    "Tungareshwar Wildlife Sanctuary",
+    "Prithvi Cafe",
+    "Oberoi Mall",
+    "Girgaon Chowpatty",
+    "Sanjay Gandhi National Park",
+    "Colaba Market",
+    "Crawford Market",
+    "Malabar Hill Elevated Nature Trail",
+    "Malabar Hills Forest Walk Way",
+    "Malabar Hill Nature Trail (Entry Gate)",
+    "Mokai Cafe Chapel Road",
+    "Gorai Beach",
+    "Sin City Rooftop Resto & Lounge",
+    "Hanging Gardens",
+    "Bollywood Park Filmcity Mumbai",
+    "Wonders Park",
+    "Mahakali Caves",
+    "Versova Beach",
+    "Vardhman Fantasy"
+  ],
+  "place_coords": [
+    [
+      19.0696854,
+      72.8335539
+    ],
+    [
+      19.053016,
+      72.8324755
+    ],
+    [
+      18.986911799999998,
+      72.8151013
+    ],
+    [
+      19.0169538,
+      72.83039389999999
+    ],
+    [
+      19.1021443,
+      72.82593299999999
+    ],
+    [
+      18.9364064,
+      72.8314845
+    ],
+    [
+      19.0465581,
+      72.8224747
+    ],
+    [
+      19.2100854,
+      72.8353802
+    ],
+    [
+      18.9774442,
+      72.80642329999999
+    ],
+    [
+      18.9269015,
+      72.83269159999999
+    ],
+    [
+      18.9297669,
+      72.83008300000002
+    ],
+    [
+      18.9219841,
+      72.8346543
+    ],
+    [
+      19.1632096,
+      72.8926178
+    ],
+    [
+      19.109420399999998,
+      72.88118109999999
+    ],
+    [
+      18.9284122,
+      72.831578
+    ],
+    [
+      18.968397,
+      72.844163
+    ],
+    [
+      18.9273983,
+      72.83168560000001
+    ],
+    [
+      18.957066599999997,
+      72.7989051
+    ],
+    [
+      19.2275109,
+      72.88172349999999
+    ],
+    [
+      19.003245,
+      72.827576
+    ],
+    [
+      19.0863795,
+      72.8889774
+    ],
+    [
+      18.994459,
+      72.825031
+    ],
+    [
+      19.207860399999998,
+      72.9048071
+    ],
+    [
+      19.1237749,
+      72.835021
+    ],
+    [
+      18.9560988,
+      72.8156089
+    ],
+    [
+      19.1059201,
+      72.8257181
+    ],
+    [
+      18.978988899999997,
+      72.8348153
+    ],
+    [
+      18.9810633,
+      72.8172708
+    ],
+    [
+      18.9937424,
+      72.8202742
+    ],
+    [
+      18.9257724,
+      72.83144659999999
+    ],
+    [
+      18.93197,
+      72.8350343
+    ],
+    [
+      19.4033136,
+      72.9578676
+    ],
+    [
+      19.106129199999998,
+      72.8257094
+    ],
+    [
+      19.1741983,
+      72.8604101
+    ],
+    [
+      18.951862200000004,
+      72.8165592
+    ],
+    [
+      19.2204535,
+      72.9128422
+    ],
+    [
+      18.920717,
+      72.830649
+    ],
+    [
+      18.947428,
+      72.8341772
+    ],
+    [
+      18.9540272,
+      72.8042631
+    ],
+    [
+      18.9540158,
+      72.8046822
+    ],
+    [
+      18.9541097,
+      72.8037243
+    ],
+    [
+      19.0524259,
+      72.8285777
+    ],
+    [
+      19.2419548,
+      72.7808269
+    ],
+    [
+      19.1308564,
+      72.8310681
+    ],
+    [
+      18.9565598,
+      72.80498659999999
+    ],
+    [
+      19.165619,
+      72.8780733
+    ],
+    [
+      19.026472,
+      73.0253348
+    ],
+    [
+      19.1300798,
+      72.8731738
+    ],
+    [
+      19.1246969,
+      72.81703279999999
+    ],
+    [
+      19.2888754,
+      72.8669137
+    ]
+  ],
+  "categories": [
+    "Art Gallery",
+    "Adventure Sports",
+    "Point of Interest",
+    "Religious Site",
+    "Restaurant",
+    "Museum",
+    "Religious Site",
+    "Adventure Sports",
+    "Religious Site",
+    "Tourist Attraction",
+    "Tourist Attraction",
+    "Historic & Cultural",
+    "Park & Gardens",
+    "Café",
+    "Point of Interest",
+    "Adventure Sports",
+    "Art Gallery",
+    "Park & Gardens",
+    "Hiking & Trekking",
+    "Café",
+    "Shopping",
+    "Shopping",
+    "Tourist Attraction",
+    "Adventure Sports",
+    "Point of Interest",
+    "Point of Interest",
+    "Museum",
+    "Restaurant",
+    "Nightclub",
+    "Art Gallery",
+    "Park & Gardens",
+    "Tourist Attraction",
+    "Café",
+    "Shopping",
+    "Beach",
+    "National Park",
+    "Local Market",
+    "Local Market",
+    "Tourist Attraction",
+    "Park & Gardens",
+    "Tourist Attraction",
+    "Café",
+    "Beach",
+    "Nightclub",
+    "Tourist Attraction",
+    "Tourist Attraction",
+    "Adventure & Thrill",
+    "Tourist Attraction",
+    "Beach",
+    "Adventure & Thrill"
+  ]
+}

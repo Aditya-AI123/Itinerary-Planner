@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rate Places — Itinerary Planner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ───────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      height: 52px;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .back-btn {
+      font-size: 0.85rem;
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .header-city {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #111;
+    }
+    .progress-text {
+      font-size: 0.82rem;
+      color: #888;
+      min-width: 54px;
+      text-align: right;
+    }
+
+    /* ── Main wrapper ─────────────────────────────── */
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 16px 32px;
+    }
+
+    /* ── Card ─────────────────────────────────────── */
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    /* ── Photo ────────────────────────────────────── */
+    .photo-wrap {
+      position: relative;
+      height: 280px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+    .photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+    .photo-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      font-size: 0.88rem;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .photo-placeholder .ph-icon { font-size: 2rem; }
+
+    .photo-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.32);
+      color: #fff;
+      border: none;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .photo-nav:hover { background: rgba(0, 0, 0, 0.55); }
+    .photo-nav.left { left: 10px; }
+    .photo-nav.right { right: 10px; }
+
+    .photo-dots {
+      position: absolute;
+      bottom: 10px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+    }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+    }
+    .dot.active { background: #fff; }
+
+    /* Photo counter badge */
+    .photo-counter {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.45);
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* ── Place info ───────────────────────────────── */
+    .info {
+      padding: 16px 18px;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .place-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #111;
+      margin-bottom: 6px;
+    }
+    .place-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .badge {
+      background: #eff6ff;
+      color: #2563eb;
+      border-radius: 4px;
+      padding: 2px 9px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .price { color: #16a34a; font-size: 0.82rem; font-weight: 600; }
+    .mood-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+    .mood-tag {
+      background: #f3f4f6;
+      color: #555;
+      border-radius: 20px;
+      padding: 2px 8px;
+      font-size: 0.72rem;
+    }
+    .rating { font-size: 0.85rem; color: #444; margin-bottom: 5px; }
+    .address { font-size: 0.78rem; color: #888; margin-bottom: 10px; }
+    .description { font-size: 0.85rem; color: #444; line-height: 1.55; margin-bottom: 12px; }
+
+    .review {
+      background: #f9fafb;
+      border-left: 3px solid #e5e7eb;
+      padding: 8px 12px;
+      border-radius: 0 6px 6px 0;
+    }
+    .review-author { font-size: 0.74rem; color: #888; margin-bottom: 3px; }
+    .review-text {
+      font-size: 0.82rem;
+      color: #555;
+      font-style: italic;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* ── Action buttons ───────────────────────────── */
+    .actions {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 28px;
+      padding: 18px 0 8px;
+      max-width: 420px;
+      width: 100%;
+    }
+    .action-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .action-btn {
+      border-radius: 50%;
+      border: 2px solid;
+      cursor: pointer;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.12s, box-shadow 0.12s;
+      line-height: 1;
+    }
+    .action-btn:hover { transform: scale(1.1); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+    .action-btn:active { transform: scale(0.93); }
+    .btn-cross  { width: 52px; height: 52px; border-color: #ef4444; color: #ef4444; font-size: 1.3rem; }
+    .btn-heart  { width: 64px; height: 64px; border-color: #ec4899; color: #ec4899; font-size: 1.8rem; }
+    .btn-like   { width: 52px; height: 52px; border-color: #22c55e; color: #22c55e; font-size: 1.3rem; }
+    .btn-label  { font-size: 0.68rem; color: #888; }
+
+    /* ── Submit bar ────────────────────────────────── */
+    .submit-bar {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 0 10px;
+    }
+    .btn-submit-prefs {
+      width: 100%;
+      padding: 11px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #2563eb;
+      color: #fff;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn-submit-prefs:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-submit-prefs:disabled {
+      background: #cbd5e1;
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+    .submit-hint {
+      font-size: 0.76rem;
+      color: #888;
+    }
+    .submit-hint .count { font-weight: 600; color: #2563eb; }
+
+    /* ── Results ──────────────────────────────────── */
+    .results-card {
+      width: 100%;
+      max-width: 420px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+      padding: 32px 24px;
+    }
+    .results-icon { font-size: 2.8rem; text-align: center; margin-bottom: 10px; }
+    .results-card h2 { text-align: center; font-size: 1.25rem; margin-bottom: 6px; }
+    .results-card > p { text-align: center; color: #666; font-size: 0.88rem; margin-bottom: 22px; }
+    .result-section { margin-bottom: 18px; }
+    .result-section h3 { font-size: 0.92rem; font-weight: 600; color: #333; margin-bottom: 8px; }
+    .result-section ul { list-style: none; }
+    .result-section ul li {
+      padding: 6px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 0.85rem;
+      color: #444;
+    }
+    .result-section ul li:last-child { border-bottom: none; }
+    .result-section ul li .cat { font-size: 0.74rem; color: #888; margin-left: 6px; }
+    .btn-done {
+      width: 100%;
+      padding: 11px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-done:hover { background: #1d4ed8; }
+
+    /* ── States ───────────────────────────────────── */
+    .state-msg {
+      text-align: center;
+      padding: 48px 20px;
+      color: #666;
+      font-size: 0.9rem;
+    }
+    .state-msg a { color: #2563eb; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <a href="/frontend/index.html" class="back-btn">← Form</a>
+  <span class="header-city" id="city-label">Loading…</span>
+  <span class="progress-text" id="progress-text"></span>
+</div>
+
+<div class="main" id="main">
+
+  <!-- Loading / error message -->
+  <div class="state-msg" id="state-msg">Loading places…</div>
+
+  <!-- Card + actions wrapper -->
+  <div id="card-section" class="hidden" style="width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+    <div class="card" id="place-card">
+
+      <!-- Photo area -->
+      <div class="photo-wrap">
+        <img id="place-photo" alt="Place photo" />
+        <div class="photo-placeholder" id="photo-placeholder">
+          <span class="ph-icon">🖼️</span>
+          <span id="photo-placeholder-text">No photo available</span>
+        </div>
+        <button class="photo-nav left" id="photo-prev" onclick="navPhoto(-1)">‹</button>
+        <button class="photo-nav right" id="photo-next" onclick="navPhoto(1)">›</button>
+        <div class="photo-dots" id="photo-dots"></div>
+        <div class="photo-counter" id="photo-counter"></div>
+      </div>
+
+      <!-- Info area -->
+      <div class="info">
+        <div class="place-name" id="place-name"></div>
+        <div class="place-meta">
+          <span class="badge" id="place-category"></span>
+          <span class="price" id="place-price"></span>
+        </div>
+        <div class="mood-tags" id="mood-tags"></div>
+        <div class="rating" id="place-rating"></div>
+        <div class="address" id="place-address"></div>
+        <p class="description" id="place-description"></p>
+        <div class="review" id="review-section">
+          <div class="review-author" id="review-author"></div>
+          <div class="review-text" id="review-text"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="actions">
+      <div class="action-wrap">
+        <button class="action-btn btn-cross" onclick="action('skip')" title="Skip this place">✕</button>
+        <div class="btn-label">Skip</div>
+      </div>
+      <div class="action-wrap">
+        <button class="action-btn btn-heart" onclick="action('must')" title="Must visit!">♥</button>
+        <div class="btn-label">Must Visit</div>
+      </div>
+      <div class="action-wrap">
+        <button class="action-btn btn-like" onclick="action('like')" title="I'd like to go">✓</button>
+        <div class="btn-label">Like</div>
+      </div>
+    </div>
+
+    <!-- Submit bar -->
+    <div class="submit-bar">
+      <button class="btn-submit-prefs" id="btn-submit-prefs" onclick="showResults()" disabled>
+        Submit Place Preferences
+      </button>
+      <div class="submit-hint" id="submit-hint">
+        Rate at least <span class="count" id="submit-count">0</span> / 5 places to unlock
+      </div>
+    </div>
+  </div>
+
+  <!-- Results view -->
+  <div id="results-section" class="results-card hidden">
+    <div class="results-icon">🎉</div>
+    <h2>All done!</h2>
+    <p>Your place selections have been saved and are ready for the itinerary planner.</p>
+
+    <div class="result-section">
+      <h3>♥ Must-Visit (<span id="must-count">0</span>)</h3>
+      <ul id="must-list"></ul>
+    </div>
+
+    <div class="result-section">
+      <h3>✓ Liked (<span id="liked-count">0</span>)</h3>
+      <ul id="liked-list"></ul>
+    </div>
+
+    <button class="btn-done" onclick="location.href='/frontend/index.html'">Plan Another Trip</button>
+  </div>
+
+</div>
+
+<script>
+  /* ── State ────────────────────────────────────────── */
+  let places = [], currentIdx = 0, currentPhotoIdx = 0;
+  let liked = [], mustVisit = [];
+  let apiKey = '';
+  // imageCache[placeId] = [Image, Image, ...] — keeps browser cache warm
+  const imageCache = {};
+
+  /* ── Bootstrap ────────────────────────────────────── */
+  async function init() {
+    const prefs = JSON.parse(localStorage.getItem('itinerary_preferences') || 'null');
+    if (!prefs || !prefs.citySlug) {
+      setMsg('No preferences found. <a href="/frontend/index.html">Go back to the form.</a>');
+      return;
+    }
+
+    // Fetch Google API key from server
+    try {
+      const r = await fetch('/api/config');
+      apiKey = (await r.json()).googleApiKey || '';
+    } catch (_) {}
+
+    // Load places database
+    let db;
+    try {
+      const r = await fetch('../data/places_database.json');
+      db = await r.json();
+    } catch (e) {
+      setMsg('Could not load database. Make sure <code>serve.py</code> is running.');
+      return;
+    }
+
+    const city = (db.cities || []).find(c => c.city_slug === prefs.citySlug);
+    if (!city || !(city.places || []).length) {
+      setMsg('No places found for <strong>' + (prefs.destination || prefs.citySlug) + '</strong>.');
+      return;
+    }
+
+    places = city.places;
+    document.getElementById('city-label').textContent = city.city_name;
+    document.getElementById('state-msg').classList.add('hidden');
+    document.getElementById('card-section').classList.remove('hidden');
+
+    renderCard(0);
+    prefetch(0);
+  }
+
+  /* ── Helpers ──────────────────────────────────────── */
+  function setMsg(html) {
+    document.getElementById('state-msg').innerHTML = html;
+  }
+
+  function photoUrl(resourceName) {
+    return `https://places.googleapis.com/v1/${resourceName}/media?maxWidthPx=800&key=${apiKey}`;
+  }
+
+  /* ── Rolling-window photo prefetch ───────────────── */
+  function prefetch(fromIdx) {
+    for (let i = fromIdx; i < Math.min(fromIdx + 6, places.length); i++) {
+      const p = places[i];
+      if (imageCache[p.place_id]) continue;             // already cached
+      const refs = (p.photo_references || []).slice(0, 5);
+      if (!refs.length || !apiKey) continue;
+      imageCache[p.place_id] = refs.map(ref => {
+        const img = new Image();
+        img.src = photoUrl(ref.resource_name);          // browser fetches & caches
+        return img;
+      });
+    }
+  }
+
+  /* ── Render card ──────────────────────────────────── */
+  function renderCard(idx) {
+    if (idx >= places.length) {
+      // Auto-click: all cards done — trigger submit regardless of count
+      document.getElementById('btn-submit-prefs').disabled = false;
+      document.getElementById('btn-submit-prefs').click();
+      return;
+    }
+    currentIdx = idx;
+    currentPhotoIdx = 0;
+
+    const p = places[idx];
+    const refs = (p.photo_references || []).slice(0, 5);
+
+    // Progress
+    document.getElementById('progress-text').textContent = `${idx + 1} / ${places.length}`;
+
+    // Photos
+    showPhoto(p, 0);
+    buildDots(refs);
+    updateNavBtns(refs);
+
+    // Name, category, price
+    document.getElementById('place-name').textContent = p.name || '';
+    const catEl = document.getElementById('place-category');
+    catEl.textContent = p.category || '';
+    catEl.style.display = p.category ? '' : 'none';
+
+    const priceMap = { 0: 'Free', 1: '$', 2: '$$', 3: '$$$', 4: '$$$$' };
+    const priceEl = document.getElementById('place-price');
+    priceEl.textContent = p.price_level != null ? (priceMap[p.price_level] || '') : '';
+
+    // Mood tags
+    const moodEl = document.getElementById('mood-tags');
+    moodEl.innerHTML = (p.moods || []).map(m => `<span class="mood-tag">${m}</span>`).join('');
+
+    // Rating
+    const ratingEl = document.getElementById('place-rating');
+    if (p.rating) {
+      const full = Math.round(p.rating);
+      const stars = '★'.repeat(full) + '☆'.repeat(Math.max(0, 5 - full));
+      ratingEl.textContent = `${stars} ${p.rating} · ${(p.total_ratings || 0).toLocaleString()} reviews`;
+    } else {
+      ratingEl.textContent = '';
+    }
+
+    // Address
+    document.getElementById('place-address').textContent = p.address || '';
+
+    // Description
+    document.getElementById('place-description').textContent = p.description || '';
+
+    // Review
+    const rev = (p.reviews || [])[0];
+    const revSec = document.getElementById('review-section');
+    if (rev && rev.text) {
+      const revStars = rev.rating ? '★'.repeat(rev.rating) : '';
+      document.getElementById('review-author').textContent =
+        `${rev.author || 'Guest'} ${revStars} · ${rev.relative_time || ''}`;
+      document.getElementById('review-text').textContent = `"${rev.text}"`;
+      revSec.style.display = '';
+    } else {
+      revSec.style.display = 'none';
+    }
+
+    // Scroll info pane to top
+    document.querySelector('.info').scrollTop = 0;
+  }
+
+  /* ── Photo display ────────────────────────────────── */
+  function showPhoto(place, photoIdx) {
+    const refs = (place.photo_references || []).slice(0, 5);
+    const imgEl = document.getElementById('place-photo');
+    const ph = document.getElementById('photo-placeholder');
+    const phText = document.getElementById('photo-placeholder-text');
+    const counter = document.getElementById('photo-counter');
+
+    if (!refs.length || !apiKey) {
+      imgEl.style.display = 'none';
+      ph.style.display = '';
+      phText.textContent = !apiKey ? 'API key not set' : 'No photo available';
+      counter.style.display = 'none';
+      return;
+    }
+
+    // Get URL — from cache if available, otherwise build fresh
+    const cached = imageCache[place.place_id];
+    const url = (cached && cached[photoIdx] && cached[photoIdx].src)
+      ? cached[photoIdx].src
+      : photoUrl(refs[photoIdx].resource_name);
+
+    // Show placeholder while loading
+    imgEl.style.display = 'none';
+    ph.style.display = '';
+    phText.textContent = 'Loading…';
+
+    imgEl.onload = () => {
+      imgEl.style.display = 'block';
+      ph.style.display = 'none';
+    };
+    imgEl.onerror = () => {
+      imgEl.style.display = 'none';
+      ph.style.display = '';
+      phText.textContent = 'Photo unavailable';
+    };
+    imgEl.src = url;
+
+    // Counter badge
+    if (refs.length > 1) {
+      counter.textContent = `${photoIdx + 1} / ${refs.length}`;
+      counter.style.display = '';
+    } else {
+      counter.style.display = 'none';
+    }
+  }
+
+  function buildDots(refs) {
+    document.getElementById('photo-dots').innerHTML =
+      refs.slice(0, 5).map((_, i) =>
+        `<span class="dot${i === 0 ? ' active' : ''}"></span>`
+      ).join('');
+  }
+
+  function updateNavBtns(refs) {
+    document.getElementById('photo-prev').style.visibility =
+      currentPhotoIdx > 0 ? 'visible' : 'hidden';
+    document.getElementById('photo-next').style.visibility =
+      currentPhotoIdx < refs.length - 1 ? 'visible' : 'hidden';
+  }
+
+  function navPhoto(dir) {
+    const refs = (places[currentIdx].photo_references || []).slice(0, 5);
+    const newIdx = Math.max(0, Math.min(refs.length - 1, currentPhotoIdx + dir));
+    if (newIdx === currentPhotoIdx) return;
+    currentPhotoIdx = newIdx;
+    showPhoto(places[currentIdx], currentPhotoIdx);
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === currentPhotoIdx));
+    updateNavBtns(refs);
+    // Update counter
+    document.getElementById('photo-counter').textContent = refs.length > 1 ? `${currentPhotoIdx + 1} / ${refs.length}` : '';
+  }
+
+  /* ── Actions ──────────────────────────────────────── */
+  function action(type) {
+    const place = places[currentIdx];
+    if (type === 'like') liked.push(place);
+    else if (type === 'must') mustVisit.push(place);
+    // 'skip' — just move on
+
+    // Persist intermediate state
+    saveSelections();
+    updateSubmitBtn();
+
+    prefetch(currentIdx + 1);
+    renderCard(currentIdx + 1);
+  }
+
+  /* ── Submit button state ──────────────────────────── */
+  function updateSubmitBtn() {
+    const total = liked.length + mustVisit.length;
+    const MIN = 5;
+    const btn = document.getElementById('btn-submit-prefs');
+    const hint = document.getElementById('submit-hint');
+    const countEl = document.getElementById('submit-count');
+
+    btn.disabled = total < MIN;
+    countEl.textContent = total;
+
+    if (total >= MIN) {
+      hint.innerHTML = `<span class="count">${total}</span> places selected — ready to submit!`;
+    } else {
+      hint.innerHTML = `Rate at least <span class="count">${total}</span> / ${MIN} places to unlock`;
+    }
+  }
+
+  function saveSelections() {
+    localStorage.setItem('place_selections', JSON.stringify({
+      liked:     liked.map(p => ({ place_id: p.place_id, name: p.name, category: p.category })),
+      mustVisit: mustVisit.map(p => ({ place_id: p.place_id, name: p.name, category: p.category })),
+    }));
+  }
+
+  /* ── Results ──────────────────────────────────────── */
+  function showResults() {
+    document.getElementById('card-section').classList.add('hidden');
+    const res = document.getElementById('results-section');
+    res.classList.remove('hidden');
+
+    document.getElementById('must-count').textContent = mustVisit.length;
+    document.getElementById('liked-count').textContent = liked.length;
+
+    const fmt = arr =>
+      arr.length
+        ? arr.map(p => `<li>${p.name}${p.category ? `<span class="cat">${p.category}</span>` : ''}</li>`).join('')
+        : '<li style="color:#bbb;font-style:italic">None selected</li>';
+
+    document.getElementById('must-list').innerHTML = fmt(mustVisit);
+    document.getElementById('liked-list').innerHTML = fmt(liked);
+
+    saveSelections();
+  }
+
+  /* ── Run ──────────────────────────────────────────── */
+  init();
+</script>
+</body>
+</html>
