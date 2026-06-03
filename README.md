@@ -1,7 +1,5 @@
 # AI Itinerary Planner
 
-### Self Project | Jun '25 – Aug '
-
 ## 1. Problem Statement
 
 Planning a trip to Mumbai or Goa is overwhelming. Generic travel sites dump hundreds of places with no
@@ -250,8 +248,5 @@ Frontend (Swipe UI) React (Bumble-style card swipe interaction)
 ```
 Backend FastAPI (async endpoints, streaming responses)
 ```
-
-```
-AI Itinerary Planner | Self Project | Jun '25 – Aug '
 ```
 
