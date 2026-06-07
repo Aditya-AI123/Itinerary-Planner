@@ -62,7 +62,7 @@ load_dotenv(dotenv_path=ROOT / ".env")
 
 MODEL_NAME   = "gemini-2.5-flash-preview-05-20"
 TEMPERATURE  = 0.3        # Low temperature → consistent, logical clustering
-MAX_TOKENS   = 4096
+MAX_TOKENS   = 8192
 
 # ─── Planning rules (also injected into the prompt) ───────────────────────────
 
@@ -153,6 +153,7 @@ def _build_distance_table(
     sub_matrix: np.ndarray,
     ordered_ids: list[str],
     place_details: dict[str, dict],
+    must_visit_ids: Optional[set[str]] = None,
 ) -> str:
     """
     Convert the sub-matrix into a compact, human-readable table string
@@ -174,14 +175,16 @@ def _build_distance_table(
     labels = [f"P{i+1}" for i in range(n)]
 
     # Legend
+    must_visit_ids = must_visit_ids or set()
     legend_lines = []
     for label, pid in zip(labels, ordered_ids):
-        p      = place_details.get(pid, {})
-        name   = p.get("name", pid[:12])
-        cat    = p.get("category", "")
-        rating = p.get("rating")
-        r_str  = f" ⭐{rating}" if rating else ""
-        legend_lines.append(f"  {label} = {name} [{cat}]{r_str}")
+        p        = place_details.get(pid, {})
+        name     = p.get("name", pid[:12])
+        cat      = p.get("category", "")
+        rating   = p.get("rating")
+        r_str    = f" ⭐{rating}" if rating else ""
+        mv_tag   = " ★MUST-VISIT" if pid in must_visit_ids else ""
+        legend_lines.append(f"  {label} = {name} [{cat}]{r_str}{mv_tag}")
     legend = "\n".join(legend_lines)
 
     # Column header
@@ -277,8 +280,11 @@ DISTANCE DATA
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PLANNING RULES (non-negotiable)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. The user STARTS and ENDS every day at their hotel. All driving distances
-   you reason about must account for the round-trip from/back to the hotel.
+1. The user STARTS and ENDS every day at their hotel. The distance matrix
+   only covers place-to-place distances; exact hotel-to-place distances are
+   NOT in the data. Estimate hotel-to-cluster driving based on the hotel
+   location provided above and the cluster's general area — clearly mark
+   any such estimates as approximate in your brief.
 2. Maximum total driving per day: {MAX_KM_PER_DAY} km (one-way legs summed).
 3. Maximum proper sightseeing/activity stops per day: {MAX_ACTIVITIES_PER_DAY}.
    Restaurants, cafés, street food, local markets — these do NOT count
@@ -397,7 +403,7 @@ def build_trip_brief(
     place_details = _load_place_details(city_slug, ordered_ids)
 
     # ── 4. Build distance table string ──────────────────────────────────────
-    distance_table = _build_distance_table(sub_matrix, ordered_ids, place_details)
+    distance_table = _build_distance_table(sub_matrix, ordered_ids, place_details, must_visit_ids)
 
     # ── 5. Build prompt ──────────────────────────────────────────────────────
     prompt = _build_prompt(
