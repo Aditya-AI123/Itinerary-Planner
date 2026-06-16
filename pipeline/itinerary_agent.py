@@ -73,6 +73,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types as genai_types
+from pipeline.hotel_resolver import resolve_hotel_proxy, inject_hotel_proxy
 
 ROOT     = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
@@ -82,9 +83,9 @@ load_dotenv(dotenv_path=ROOT / ".env")
 
 # ─── Model config ─────────────────────────────────────────────────────────────
 
-MODEL_NAME   = "gemini-2.5-flash-preview-05-20"
+MODEL_NAME   = "gemini-2.5-flash"
 TEMPERATURE  = 0.5    # Creative scheduling, still consistent
-MAX_TOKENS   = 16384  # Large: full multi-day JSON itinerary
+MAX_TOKENS   = 65536  # Gemini 2.5 Flash max — needed for large multi-day JSON itineraries
 
 # ─── Categories that are food/leisure (do not count toward activity cap) ──────
 
@@ -325,7 +326,7 @@ HARD SCHEDULING RULES  (non-negotiable)
     ends with a return to the hotel (latest slot ≤ 22:30 for adults-only;
     ≤ 21:00 if children are present). Add a "hotel_return" slot at day end.
 
-2.  ACTIVITY CAP: Max {3 if travel_pace <= 3 else 4} proper sightseeing/activity
+2.  ACTIVITY CAP: Max {3 if prefs.travel_pace <= 3 else 4} proper sightseeing/activity
     stops per day (places tagged [activity] in the catalog). Food, drinks, and
     leisure do not count toward this cap.
 
@@ -482,13 +483,40 @@ def build_itinerary(
     end       = date.fromisoformat(prefs.end_date)
     trip_days = (end - start).days + 1
 
+    # ── 0. Hotel proxy resolution ───────────────────────────────────────────
+    # Geocode the hotel address and find the nearest database place as a proxy.
+    # The proxy anchors the itinerary: it gets highest-priority must-visit status
+    # so the LLM treats it as the daily departure / return point.
+    print("\n" + "─" * 50)
+    proxy = resolve_hotel_proxy(
+        city_slug     = prefs.city_slug,
+        hotel_address = prefs.hotel_address,
+        hotel_name    = prefs.hotel_name,
+        city_name     = prefs.city_name,
+        verbose       = True,
+    )
+
+    # Inject proxy into selection lists
+    sel_list  = list(selected_place_ids)
+    must_list = list(must_visit_ids)
+    sel_list, must_list = inject_hotel_proxy(proxy, sel_list, must_list)
+    must_visit_ids     = set(must_list)
+    selected_place_ids = sel_list
+
+    # Enrich the prefs label so the LLM prompt carries proxy context
+    import dataclasses as _dc
+    prefs = _dc.replace(prefs, hotel_address=proxy.hotel_label)
+
+    print(f"   Hotel proxy → '{proxy.proxy_place_name}'  ({proxy.distance_km:.2f} km)")
+    print("─" * 50 + "\n")
+
     # ── 1. Load place details ─────────────────────────────────────────────────
     print(f"📚 Loading place details for {len(selected_place_ids)} selected places…")
     place_details = _load_place_details(prefs.city_slug, selected_place_ids)
     if not place_details:
         raise RuntimeError(
             "No place details found in the database for the selected IDs. "
-            f"Run the pipeline for '{city_slug}' first."
+            f"Run the pipeline for '{prefs.city_slug}' first."
         )
     print(f"   {len(place_details)} place records loaded.")
 
@@ -507,36 +535,89 @@ def build_itinerary(
         weather_brief    = weather_brief if weather_brief else "(No weather brief provided — assume normal conditions.)",
     )
 
-    # ── 4. Call Gemini 2.5 Flash (JSON mode) ─────────────────────────────────
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError(
-            "GEMINI_API_KEY not set in .env. "
-            "Get a key at https://aistudio.google.com/app/apikey"
-        )
+    # ── 4. Call LLM (Gemini or Llama, driven by PIPELINE_LLM toggle) — with truncation recovery ─
+    from pipeline.model_config import get_llm_client, get_model_name, call_llm, provider_label, _active_provider
+    _model_name = get_model_name()
+    _client     = get_llm_client()
 
-    print(f"🤖 Calling {MODEL_NAME} (JSON mode)…")
-    client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model    = MODEL_NAME,
-        contents = prompt,
-        config   = genai_types.GenerateContentConfig(
-            temperature        = TEMPERATURE,
-            max_output_tokens  = MAX_TOKENS,
-            response_mime_type = "application/json",
-        ),
-    )
-    raw_text = response.text.strip()
-    print(f"   Raw response: {len(raw_text)} chars")
+    def _call_llm_with_truncation_check(prompt_text: str, label: str = "") -> tuple[str, bool]:
+        """Call the active LLM and return (raw_text, was_truncated)."""
+        tag = f" [{label}]" if label else ""
+        print(f"🤖 Calling {provider_label()} (JSON mode){tag}…")
+        truncated = False
 
-    # ── 5. Parse JSON ─────────────────────────────────────────────────────────
+        if _active_provider() == "llama":
+            # Groq — no native finish_reason for MAX_TOKENS in the same way
+            text = call_llm(
+                client      = _client,
+                model_name  = _model_name,
+                prompt      = prompt_text,
+                temperature = TEMPERATURE,
+                max_tokens  = MAX_TOKENS,
+                json_mode   = True,
+            )
+        else:
+            # Gemini — can inspect finish_reason
+            from google import genai as _genai
+            from google.genai import types as _genai_types
+            resp = _client.models.generate_content(
+                model    = _model_name,
+                contents = prompt_text,
+                config   = _genai_types.GenerateContentConfig(
+                    temperature        = TEMPERATURE,
+                    max_output_tokens  = MAX_TOKENS,
+                    response_mime_type = "application/json",
+                ),
+            )
+            text = resp.text.strip() if resp.text else ""
+            try:
+                candidate = resp.candidates[0] if resp.candidates else None
+                if candidate:
+                    reason = str(getattr(candidate, 'finish_reason', '') or '')
+                    if 'MAX_TOKENS' in reason.upper() or reason == '2':
+                        truncated = True
+                        print(f"   ⚠️  finish_reason=MAX_TOKENS — output was truncated! ({len(text)} chars)")
+            except Exception:
+                pass
+
+        print(f"   Raw response: {len(text)} chars | truncated={truncated}")
+        return text, truncated
+
+    raw_text, truncated = _call_llm_with_truncation_check(prompt, label="attempt-1")
+
+    # ── 5. Parse JSON — retry once with concise mode if truncated / invalid ───
     print("🔍 Parsing itinerary JSON…")
-    raw_itinerary = _extract_json(raw_text)
+    raw_itinerary = None
+
+    for parse_attempt in range(2):
+        try:
+            raw_itinerary = _extract_json(raw_text)
+            break   # success
+        except RuntimeError as parse_err:
+            if parse_attempt == 0:
+                print(f"   ⚠️  Parse attempt 1 failed ({parse_err!s:.120}…)")
+                print("   🔄  Retrying with CONCISE mode (fewer tips per slot)…")
+                concise_note = (
+                    "\n\n⚠️  CONCISE MODE: The previous response was too long and got truncated. "
+                    "This time, include ONLY 1 short tip per slot (max 80 characters). "
+                    "Keep all slot names, times, notes, and place_ids — only reduce the tips array. "
+                    "Return the same complete JSON schema but with minimal tips."
+                )
+                raw_text, truncated = _call_llm_with_truncation_check(prompt + concise_note, label="attempt-2-concise")
+            else:
+                raise RuntimeError(
+                    f"LLM returned invalid JSON (both attempts failed).\n"
+                    f"Parse error: {parse_err}\n"
+                    f"Raw output (first 800 chars):\n{raw_text[:800]}"
+                ) from parse_err
+
+    if raw_itinerary is None:
+        raise RuntimeError("Itinerary parsing produced no result after 2 attempts.")
 
     # Basic validation
     if "days" not in raw_itinerary:
         raise RuntimeError(
-            "Gemini response is missing the required 'days' key.\n"
+            "LLM response is missing the required 'days' key.\n"
             f"Keys found: {list(raw_itinerary.keys())}"
         )
     days_found = len(raw_itinerary["days"])
@@ -549,7 +630,7 @@ def build_itinerary(
     # ── 7. Attach metadata ────────────────────────────────────────────────────
     itinerary["_meta"] = {
         "generated_at":       date.today().isoformat(),
-        "model":              MODEL_NAME,
+        "model":              _model_name,
         "city_slug":          prefs.city_slug,
         "total_selected":     len(place_details),
         "must_visit_count":   len(must_visit_ids),

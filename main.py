@@ -14,24 +14,49 @@ Behaviour:
        Re-fetch Place Details only for those places → re-normalize → LLM → merge → save
      This handles the case where Groq's rate limit was hit mid-run.
 
-LLM enrichment via Groq / llama-3.3-70b-versatile:
+LLM enrichment via Groq / llama-3.3-70b-versatile (enricher — always Llama):
   - Compacts description to ≤200 words
   - Summarizes top reviews into a review_summary paragraph
   - Generates overall_note (what to do / experience at this place)
   If rate limit is hit, stops gracefully — saved places keep their LLM data,
   null-filled places can be completed on the next run.
+
+──────────────────────────────────────────────────────────────
+LLM BACKEND TOGGLE  ────────────────────────────────────────────
+
+  USE_LLAMA = True   →  Trip Planner + Weather + Itinerary agents all use
+                         Llama 3.3 70B via Groq  (requires GROQ_API_KEY in .env)
+
+  USE_LLAMA = False  →  All three agents use Gemini 2.5 Flash  (default)
+                         (requires GEMINI_API_KEY in .env)
+
+  The enricher (llm_enricher.py) always uses Llama/Groq regardless of this flag.
+
 """
 
+import os
 import sys
 import time
 from pathlib import Path
 from datetime import datetime, timezone
+
+# ───────────────────────────────────────────────────────────────
+# 🔄 LLM BACKEND TOGGLE  ─  change this one line to switch all three agents
+# ───────────────────────────────────────────────────────────────
+USE_LLAMA = True    # True  → Llama 3.3 70B via Groq
+                     # False → Google Gemini 2.5 Flash  (default)
+# ───────────────────────────────────────────────────────────────
+
+# Propagate the toggle to all pipeline agents via environment variable
+# (must happen BEFORE any pipeline module is imported)
+os.environ["PIPELINE_LLM"] = "llama" if USE_LLAMA else "gemini"
 
 from dotenv import load_dotenv
 from slugify import slugify
 
 # Load .env from project root
 load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
+
 
 from pipeline.geocode import geocode_city
 from pipeline.text_search import fetch_all_categories

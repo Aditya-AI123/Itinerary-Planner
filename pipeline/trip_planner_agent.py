@@ -48,6 +48,7 @@ import numpy as np
 from google import genai
 from google.genai import types as genai_types
 from dotenv import load_dotenv
+from pipeline.hotel_resolver import resolve_hotel_proxy, inject_hotel_proxy
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -58,9 +59,9 @@ DB_PATH      = DATA_DIR / "places_database.json"
 
 load_dotenv(dotenv_path=ROOT / ".env")
 
-# ─── Model config ─────────────────────────────────────────────────────────────
+# ─── Model config (driven by PIPELINE_LLM env var set in main.py) ───────────────
+# Import lazily inside functions so env var is read at call-time, not import-time.
 
-MODEL_NAME   = "gemini-2.5-flash-preview-05-20"
 TEMPERATURE  = 0.3        # Low temperature → consistent, logical clustering
 MAX_TOKENS   = 8192
 
@@ -383,29 +384,81 @@ def build_trip_brief(
     must_visit_ids = set(must_visit_ids or [])
     trip_types     = trip_types or []
 
+    import time as _t
+    _fn_start = _t.time()
+    from datetime import datetime as _dt
+    def _ts(): return _dt.now().strftime("%H:%M:%S.%f")[:-3]
+
+    print(f"\n{'='*64}")
+    print(f"[TRIP_PLANNER] ► START  {_ts()}")
+    print(f"[TRIP_PLANNER]   city={city_slug} | days={trip_days} | selected={len(selected_place_ids)} | must-visit={len(must_visit_ids)}")
+    print(f"[TRIP_PLANNER]   adults={num_adults} | children={num_children} | pace={travel_pace} | budget={budget_level}")
+    print(f"[TRIP_PLANNER]   types={trip_types} | hotel='{hotel_address}'")
+    print(f"{'='*64}")
+
+    # ── 0. Resolve hotel proxy ───────────────────────────────────────────────
+    _t0 = _t.time()
+    print(f"\n[TRIP_PLANNER] Step 0: Hotel proxy resolution  |  START {_ts()}")
+    meta_for_resolver = _load_meta(city_slug)
+    proxy = resolve_hotel_proxy(
+        city_slug     = city_slug,
+        hotel_address = hotel_address,
+        city_name     = meta_for_resolver.get("city_name", city_slug.title()),
+        verbose       = True,
+    )
+    hotel_label = proxy.hotel_label
+    sel_list  = list(selected_place_ids)
+    must_list = list(must_visit_ids)
+    sel_list, must_list = inject_hotel_proxy(proxy, sel_list, must_list)
+    must_visit_ids      = set(must_list)
+    selected_place_ids  = sel_list
+    print(f"[TRIP_PLANNER] Step 0 ✅  |  END {_ts()}  |  elapsed={_t.time()-_t0:.2f}s")
+    print(f"[TRIP_PLANNER]   proxy_place='{proxy.proxy_place_name}'  |  dist={proxy.distance_km:.2f}km  |  fallback={proxy.fallback_used}")
+    print(f"[TRIP_PLANNER]   hotel_label='{hotel_label}'")
+    print(f"[TRIP_PLANNER]   selected after inject={len(selected_place_ids)} | must-visit after inject={len(must_visit_ids)}")
+
     # ── 1. Load matrix + metadata ────────────────────────────────────────────
-    print(f"📐 Loading distance matrix for '{city_slug}'…")
+    _t1 = _t.time()
+    print(f"\n[TRIP_PLANNER] Step 1: Load distance matrix  |  START {_ts()}")
     meta       = _load_meta(city_slug)
     full_matrix = _load_matrix(city_slug)
     all_ids    = meta["place_ids"]
     city_name  = meta.get("city_name", city_slug.title())
+    print(f"[TRIP_PLANNER] Step 1 ✅  |  END {_ts()}  |  elapsed={_t.time()-_t1:.2f}s")
+    print(f"[TRIP_PLANNER]   matrix size={len(all_ids)}×{len(all_ids)} | city_name='{city_name}'")
 
     # ── 2. Slice to selected places only ────────────────────────────────────
+    _t2 = _t.time()
+    print(f"\n[TRIP_PLANNER] Step 2: Slice matrix to selected places  |  START {_ts()}")
     sub_matrix, ordered_ids = _slice_matrix(full_matrix, all_ids, selected_place_ids)
     K = len(ordered_ids)
-    print(f"   {K} selected places → {K}×{K} sub-matrix extracted")
+    print(f"[TRIP_PLANNER] Step 2 ✅  |  END {_ts()}  |  elapsed={_t.time()-_t2:.2f}s")
+    print(f"[TRIP_PLANNER]   {K} selected places → {K}×{K} sub-matrix")
+    print(f"[TRIP_PLANNER]   ordered_ids={ordered_ids}")
 
     if K == 0:
+        print("[TRIP_PLANNER] ⚠️  No valid place IDs found in matrix — returning empty brief")
         return "⚠️  No valid place IDs found in the matrix. Cannot build trip brief."
 
-    # ── 3. Load full place details (name, category, moods, etc.) ────────────
-    print("📚 Loading place details from database…")
+    # ── 3. Load full place details ────────────────────────────────────────────
+    _t3 = _t.time()
+    print(f"\n[TRIP_PLANNER] Step 3: Load place details  |  START {_ts()}")
     place_details = _load_place_details(city_slug, ordered_ids)
+    print(f"[TRIP_PLANNER] Step 3 ✅  |  END {_ts()}  |  elapsed={_t.time()-_t3:.2f}s")
+    print(f"[TRIP_PLANNER]   {len(place_details)} place records loaded")
+    for pd in place_details:
+        print(f"[TRIP_PLANNER]   • {pd.get('place_id','?')[:20]}  name='{pd.get('name','?')}'  cat='{pd.get('category','?')}'")
 
     # ── 4. Build distance table string ──────────────────────────────────────
+    _t4 = _t.time()
+    print(f"\n[TRIP_PLANNER] Step 4: Build distance table string  |  START {_ts()}")
     distance_table = _build_distance_table(sub_matrix, ordered_ids, place_details, must_visit_ids)
+    print(f"[TRIP_PLANNER] Step 4 ✅  |  END {_ts()}  |  elapsed={_t.time()-_t4:.2f}s")
+    print(f"[TRIP_PLANNER]   distance_table chars={len(distance_table)}")
 
     # ── 5. Build prompt ──────────────────────────────────────────────────────
+    _t5 = _t.time()
+    print(f"\n[TRIP_PLANNER] Step 5: Build LLM prompt  |  START {_ts()}")
     prompt = _build_prompt(
         city_name      = city_name,
         trip_days      = trip_days,
@@ -414,34 +467,36 @@ def build_trip_brief(
         trip_types     = trip_types,
         budget_level   = budget_level,
         travel_pace    = travel_pace,
-        hotel_address  = hotel_address,
+        hotel_address  = hotel_label,
         must_visit_ids = must_visit_ids,
         ordered_ids    = ordered_ids,
         place_details  = place_details,
         distance_table = distance_table,
     )
+    print(f"[TRIP_PLANNER] Step 5 ✅  |  END {_ts()}  |  elapsed={_t.time()-_t5:.2f}s")
+    print(f"[TRIP_PLANNER]   prompt chars={len(prompt)}")
 
-    # ── 6. Call Gemini 2.5 Flash ─────────────────────────────────────────────
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError(
-            "GEMINI_API_KEY not set in .env. "
-            "Get a key at https://aistudio.google.com/app/apikey"
-        )
+    # ── 6. Call LLM ─────────────────────────────────────────────────────────
+    from pipeline.model_config import get_llm_client, get_model_name, call_llm, provider_label
+    model_name = get_model_name()
+    client     = get_llm_client()
+    _t6 = _t.time()
+    print(f"\n[TRIP_PLANNER] Step 6: LLM call  |  model={provider_label()}  |  START {_ts()}")
 
-    print(f"🤖 Calling {MODEL_NAME}…")
-    client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model  = MODEL_NAME,
-        contents = prompt,
-        config = genai_types.GenerateContentConfig(
-            temperature       = TEMPERATURE,
-            max_output_tokens = MAX_TOKENS,
-        ),
+    brief = call_llm(
+        client      = client,
+        model_name  = model_name,
+        prompt      = prompt,
+        temperature = TEMPERATURE,
+        max_tokens  = MAX_TOKENS,
+        json_mode   = False,
     )
-    brief = response.text.strip()
 
-    print(f"✅ Planning brief generated ({len(brief)} chars)")
+    _t6_elapsed = _t.time() - _t6
+    _fn_elapsed = _t.time() - _fn_start
+    print(f"[TRIP_PLANNER] Step 6 ✅  |  END {_ts()}  |  LLM elapsed={_t6_elapsed:.2f}s")
+    print(f"[TRIP_PLANNER] ◄ TOTAL elapsed={_fn_elapsed:.2f}s  |  brief chars={len(brief)}")
+    print(f"{'='*64}\n")
     return brief
 
 

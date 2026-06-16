@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Itinerary — Itinerary Planner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      font-size: 15px;
+      background: #f0f2f5;
+      color: #111;
+      min-height: 100vh;
+    }
+
+    /* ── Header ──────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      height: 52px;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .header-title { font-weight: 700; font-size: 1rem; color: #111; }
+    .header-city  { font-size: 0.82rem; color: #6b7280; }
+    .back-link    { font-size: 0.85rem; color: #2563eb; text-decoration: none; font-weight: 500; }
+
+    /* ── Main layout ─────────────────────────────────────── */
+    .page-body {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+
+    /* ── Loader section ─────────────────────────────────── */
+    #loader-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 24px 60px;
+      text-align: center;
+    }
+
+    .loader-spinner {
+      width: 56px; height: 56px;
+      border: 5px solid #e5e7eb;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 28px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loader-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #111;
+      margin-bottom: 8px;
+    }
+    .loader-stages {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 380px;
+    }
+    .stage-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 7px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      font-size: 0.85rem;
+      color: #6b7280;
+      transition: all 0.25s ease;
+    }
+    .stage-item.active {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+      font-weight: 500;
+    }
+    .stage-item.done {
+      background: #f0fdf4;
+      border-color: #86efac;
+      color: #166534;
+    }
+    .stage-icon { font-size: 1rem; flex-shrink: 0; }
+    .stage-msg  { flex: 1; text-align: left; }
+    .stage-tick { font-size: 0.85rem; flex-shrink: 0; }
+
+    /* ── Error banner ────────────────────────────────────── */
+    #error-banner {
+      display: none;
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      padding: 16px 20px;
+      color: #991b1b;
+      margin: 24px 0;
+    }
+    #error-banner.show { display: block; }
+    #error-banner h3 { margin-bottom: 6px; font-size: 0.95rem; }
+    #error-banner p  { font-size: 0.85rem; }
+
+    /* ── Trip summary banner ─────────────────────────────── */
+    #trip-summary-bar {
+      display: none;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+    #trip-summary-bar.show { display: block; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .summary-chip {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 7px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      color: #374151;
+    }
+    .summary-chip .sc-label { color: #9ca3af; font-size: 0.72rem; display: block; margin-bottom: 2px; }
+    .summary-chip .sc-val   { font-weight: 600; color: #111; }
+    .weather-summary-note {
+      margin-top: 10px;
+      font-size: 0.83rem;
+      color: #4b5563;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 8px 12px;
+    }
+
+    /* ── Section title ───────────────────────────────────── */
+    .section-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #9ca3af;
+      margin: 28px 0 12px;
+    }
+
+    /* ── Day card ────────────────────────────────────────── */
+    .day-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      animation: fadeInUp 0.35s ease both;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .day-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      color: #fff;
+      cursor: pointer;
+      user-select: none;
+    }
+    .day-header-left { flex: 1; }
+    .day-number      { font-size: 0.72rem; font-weight: 600; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.07em; }
+    .day-date        { font-size: 1rem; font-weight: 700; margin: 1px 0 3px; }
+    .day-theme       { font-size: 0.82rem; opacity: 0.85; }
+    .day-badges      { display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end; }
+    .badge           { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+    .badge-km        { background: rgba(255,255,255,0.18); color: #e0f2fe; }
+    .badge-acts      { background: rgba(255,255,255,0.18); color: #dcfce7; }
+    .day-expand-icon { font-size: 0.75rem; opacity: 0.7; margin-top: 4px; margin-left: 8px; transition: transform 0.2s; }
+    .day-expand-icon.open { transform: rotate(180deg); }
+
+    .day-weather {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.8rem;
+      color: #4b5563;
+    }
+    .day-weather-icon { font-size: 1rem; }
+
+    /* ── Slots list ──────────────────────────────────────── */
+    .slots-list { padding: 4px 0 8px; }
+
+    .slot {
+      display: flex;
+      gap: 12px;
+      padding: 12px 18px;
+      border-bottom: 1px solid #f3f4f6;
+      position: relative;
+    }
+    .slot:last-child { border-bottom: none; }
+
+    /* Type colours */
+    .slot-type-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+    .dot-activity     { background: #2563eb; }
+    .dot-meal         { background: #f59e0b; }
+    .dot-leisure      { background: #10b981; }
+    .dot-transit      { background: #8b5cf6; }
+    .dot-hotel_return { background: #6b7280; }
+
+    .slot-time {
+      width: 90px;
+      flex-shrink: 0;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #6b7280;
+      padding-top: 2px;
+      white-space: nowrap;
+    }
+
+    .slot-content  { flex: 1; min-width: 0; }
+    .slot-name     { font-size: 0.9rem; font-weight: 600; color: #111; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .must-badge    { font-size: 0.65rem; font-weight: 700; background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 10px; border: 1px solid #fcd34d; }
+    .slot-notes    { font-size: 0.82rem; color: #374151; margin-top: 4px; line-height: 1.5; }
+    .slot-tips     { margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+    .tip-item      { font-size: 0.75rem; color: #6b7280; display: flex; align-items: flex-start; gap: 5px; }
+    .tip-item::before { content: '💡'; font-size: 0.7rem; flex-shrink: 0; margin-top: 1px; }
+
+    /* Place details inline */
+    .place-meta {
+      display: flex;
+      gap: 8px;
+      margin-top: 5px;
+      flex-wrap: wrap;
+    }
+    .place-tag {
+      font-size: 0.72rem;
+      padding: 1px 7px;
+      border-radius: 10px;
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .place-tag.rating { background: #fef9c3; color: #713f12; }
+    .place-tag.cat    { background: #ede9fe; color: #4c1d95; }
+
+    .weather-flag {
+      font-size: 0.75rem;
+      color: #b45309;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 5px;
+      padding: 3px 8px;
+      margin-top: 4px;
+      display: inline-block;
+    }
+
+    /* ── Overflow section ────────────────────────────────── */
+    .overflow-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 10px;
+    }
+    .overflow-title { font-size: 0.88rem; font-weight: 600; color: #374151; }
+    .overflow-reason { font-size: 0.78rem; color: #6b7280; margin-top: 3px; }
+
+    /* ── Tips section ────────────────────────────────────── */
+    .tips-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 560px) { .tips-grid { grid-template-columns: 1fr; } }
+
+    .tips-box {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .tips-box h3 { font-size: 0.85rem; font-weight: 700; color: #374151; margin-bottom: 10px; }
+    .tips-box ul { padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .tips-box li { font-size: 0.8rem; color: #4b5563; display: flex; align-items: flex-start; gap: 6px; }
+    .tips-box li::before { content: '•'; color: #2563eb; font-weight: 700; flex-shrink: 0; }
+
+    /* ── Done banner ─────────────────────────────────────── */
+    #done-banner {
+      display: none;
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 10px;
+      padding: 16px 20px;
+      text-align: center;
+      margin: 24px 0;
+    }
+    #done-banner.show { display: block; }
+    #done-banner h3   { color: #166534; font-size: 1rem; margin-bottom: 4px; }
+    #done-banner p    { font-size: 0.83rem; color: #166534; }
+
+    /* ── Utility ─────────────────────────────────────────── */
+    .hidden { display: none !important; }
+    .muted  { color: #9ca3af; font-style: italic; font-size: 0.82rem; }
+
+    /* ── Print polish ─────────────────────────────────────── */
+    @media print {
+      .header, .back-link, #loader-section { display: none; }
+      .day-card { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <a class="back-link" href="/frontend/swipe.html">← Back</a>
+  <div>
+    <div class="header-title">Your Itinerary</div>
+    <div class="header-city" id="header-city"></div>
+  </div>
+  <div style="width:48px"></div><!-- spacer -->
+</header>
+
+<div class="page-body">
+
+  <!-- ── Error banner ──────────────────────────── -->
+  <div id="error-banner">
+    <h3>⚠️ Something went wrong</h3>
+    <p id="error-msg"></p>
+    <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+      <button onclick="location.reload()" style="padding:7px 16px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:0.83rem;font-weight:600;cursor:pointer">🔄 Try Again</button>
+      <button onclick="location.href='/frontend/swipe.html'" style="padding:7px 16px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:0.83rem;cursor:pointer">← Back to Place Selection</button>
+    </div>
+  </div>
+
+  <!-- ── Loader ────────────────────────────────── -->
+  <div id="loader-section">
+    <div class="loader-spinner"></div>
+    <div class="loader-title">Building your personalised itinerary…</div>
+    <div class="loader-stages" id="loader-stages"></div>
+  </div>
+
+  <!-- ── Trip summary (shown once LLM responds) ── -->
+  <div id="trip-summary-bar">
+    <strong style="font-size:0.9rem;">Trip Overview</strong>
+    <div class="summary-grid" id="summary-grid"></div>
+    <div class="weather-summary-note" id="weather-summary-note" style="display:none"></div>
+  </div>
+
+  <!-- ── Days container ────────────────────────── -->
+  <div id="days-section" class="hidden">
+    <div class="section-title">Day-by-Day Itinerary</div>
+    <div id="days-container"></div>
+  </div>
+
+  <!-- ── Overflow ───────────────────────────────── -->
+  <div id="overflow-section" class="hidden">
+    <div class="section-title">Places Not Included This Trip</div>
+    <div id="overflow-container"></div>
+  </div>
+
+  <!-- ── Tips ─────────────────────────────────── -->
+  <div id="tips-section" class="hidden">
+    <div class="section-title">Tips &amp; Packing</div>
+    <div class="tips-grid" id="tips-grid"></div>
+  </div>
+
+  <!-- ── Done ──────────────────────────────────── -->
+  <div id="done-banner">
+    <h3>✅ Itinerary ready!</h3>
+    <p>Your personalised trip plan is complete. Enjoy your journey!</p>
+  </div>
+
+</div><!-- /.page-body -->
+
+<script>
+/* ============================================================
+   ITINERARY PAGE — STREAMING FRONTEND
+   Console debug logs are prefixed with [ITINERARY] for easy filtering.
+   ============================================================ */
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let prefs        = null;   // itinerary_preferences from localStorage
+let selections   = null;   // place_selections from localStorage
+let stageHistory = [];     // list of stage messages received so far
+let dayCount     = 0;      // number of days rendered so far
+
+// ── Stage display list (the loader phases) ────────────────────────────────────
+const STAGE_DEFS = [
+  { id: 'loading',    icon: '⚙️',  label: 'Loading pipeline modules' },
+  { id: 'hotel',      icon: '📍', label: 'Resolving hotel location'  },
+  { id: 'city',       icon: '🗺️',  label: 'Loading city data'         },
+  { id: 'distances',  icon: '📐', label: 'Calculating distances'      },
+  { id: 'weather',    icon: '🌤️',  label: 'Checking weather forecast'  },
+  { id: 'itinerary',  icon: '🤖', label: 'Generating itinerary (AI)'  },
+  { id: 'streaming',  icon: '📅', label: 'Streaming your plan…'       },
+];
+
+// Maps incoming stage msg substrings → our stage IDs
+const STAGE_MSG_MAP = [
+  { match: 'Loading pipeline',            id: 'loading'   },
+  { match: 'Loading city',                id: 'city'      },
+  { match: 'Resolving hotel',             id: 'hotel'     },
+  { match: 'Hotel',                       id: 'hotel'     },
+  { match: 'Calculating',                 id: 'distances' },
+  { match: 'distance',                    id: 'distances' },
+  { match: 'Trip Planner Agent',          id: 'distances' },
+  { match: 'Checking weather',            id: 'weather'   },
+  { match: 'Weather Agent',               id: 'weather'   },
+  { match: 'Generating',                  id: 'itinerary' },
+  { match: 'Itinerary Agent',             id: 'itinerary' },
+  { match: 'overloaded',                  id: 'itinerary' },
+  { match: 'retrying',                    id: 'itinerary' },
+  { match: 'Streaming',                   id: 'streaming' },
+];
+
+// ── Bootstrap ──────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  console.log('[ITINERARY] Page loaded — reading localStorage');
+
+  prefs      = safeParseLS('itinerary_preferences');
+  selections = safeParseLS('place_selections');
+
+  console.log('[ITINERARY] itinerary_preferences:', prefs);
+  console.log('[ITINERARY] place_selections:', selections);
+
+  if (!prefs || !prefs.citySlug) {
+    showError('No trip preferences found. Please <a href="/frontend/index.html">fill in the form first</a>.');
+    return;
+  }
+  if (!selections || (!selections.liked && !selections.mustVisit)) {
+    showError('No place selections found. Please <a href="/frontend/swipe.html">rate some places first</a>.');
+    return;
+  }
+
+  const cityName = prefs.cityName || prefs.destination || prefs.citySlug;
+  document.getElementById('header-city').textContent = cityName;
+  document.title = `${cityName} Itinerary — Itinerary Planner`;
+
+  buildLoaderUI();
+  startStream();
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function safeParseLS(key) {
+  try { return JSON.parse(localStorage.getItem(key) || 'null'); }
+  catch (e) { console.warn('[ITINERARY] Failed to parse localStorage key:', key, e); return null; }
+}
+
+function showError(html) {
+  console.error('[ITINERARY] showError:', html);
+  document.getElementById('loader-section').classList.add('hidden');
+  const el  = document.getElementById('error-banner');
+  const msg = document.getElementById('error-msg');
+  // Highlight the agent name if present (e.g. "Trip Planner Agent" / "Weather Agent" / "Itinerary Agent")
+  const highlighted = html
+    .replace(/(Trip Planner Agent[^:]*)/g, '<strong>$1</strong>')
+    .replace(/(Weather Agent[^:]*)/g,      '<strong>$1</strong>')
+    .replace(/(Itinerary Agent[^:]*)/g,    '<strong>$1</strong>')
+    .replace(/(503 UNAVAILABLE)/g,         '<code style="background:#fecaca;padding:1px 5px;border-radius:3px">$1</code>')
+    .replace(/(429)/g,                     '<code style="background:#fecaca;padding:1px 5px;border-radius:3px">429 Rate Limit</code>')
+    .replace(/(503)/g,                     '<code style="background:#fecaca;padding:1px 5px;border-radius:3px">503</code>');
+  msg.innerHTML = highlighted;
+  el.classList.add('show');
+}
+
+// ── Build loader stage items ──────────────────────────────────────────────────
+function buildLoaderUI() {
+  const container = document.getElementById('loader-stages');
+  container.innerHTML = STAGE_DEFS.map(s => `
+    <div class="stage-item" id="stage-${s.id}">
+      <span class="stage-icon">${s.icon}</span>
+      <span class="stage-msg">${s.label}</span>
+      <span class="stage-tick"></span>
+    </div>
+  `).join('');
+  console.log('[ITINERARY] Loader UI built with', STAGE_DEFS.length, 'stages');
+}
+
+let currentStageId = null;
+
+function activateStage(stageId) {
+  if (currentStageId === stageId) return;
+  console.log(`[ITINERARY] Stage transition: ${currentStageId} → ${stageId}`);
+
+  // Mark previous stage done
+  if (currentStageId) {
+    const prev = document.getElementById(`stage-${currentStageId}`);
+    if (prev) {
+      prev.classList.remove('active');
+      prev.classList.add('done');
+      prev.querySelector('.stage-tick').textContent = '✓';
+    }
+  }
+  // Activate new stage
+  const el = document.getElementById(`stage-${stageId}`);
+  if (el) {
+    el.classList.add('active');
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  currentStageId = stageId;
+}
+
+function markAllStagesDone() {
+  STAGE_DEFS.forEach(s => {
+    const el = document.getElementById(`stage-${s.id}`);
+    if (el) {
+      el.classList.remove('active');
+      el.classList.add('done');
+      el.querySelector('.stage-tick').textContent = '✓';
+    }
+  });
+}
+
+function resolveStageId(msg) {
+  for (const { match, id } of STAGE_MSG_MAP) {
+    if (msg.includes(match)) return id;
+  }
+  return null;
+}
+
+// ── Stream handler ────────────────────────────────────────────────────────────
+async function startStream() {
+  const liked     = (selections.liked     || []).map(p => p.place_id);
+  const mustVisit = (selections.mustVisit || []).map(p => p.place_id);
+  const allSelected = [...new Set([...liked, ...mustVisit])];
+
+  const body = {
+    citySlug:        prefs.citySlug,
+    cityName:        prefs.cityName || prefs.destination || prefs.citySlug,
+    selectedPlaceIds: allSelected,
+    mustVisitIds:    mustVisit,
+    preferences: {
+      startDate:            prefs.startDate,
+      endDate:              prefs.endDate,
+      numAdults:            prefs.numAdults       || 1,
+      numChildren:          prefs.numChildren     || 0,
+      tripTypes:            prefs.tripTypes       || [],
+      budgetLevel:          prefs.budgetLevel     || 'mid-range',
+      travelPace:           prefs.travelPace      || 3,
+      hotelName:            prefs.hotelName       || '',
+      accommodationAddress: prefs.accommodationAddress || '',
+    },
+  };
+
+  console.log('[ITINERARY] Sending POST /api/generate-itinerary');
+  console.log('[ITINERARY] Request payload:', JSON.stringify(body, null, 2));
+
+  activateStage('loading');
+
+  try {
+    const response = await fetch('/api/generate-itinerary', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+
+    console.log('[ITINERARY] Response status:', response.status);
+
+    if (!response.ok) {
+      const errText = await response.text();
+      showError(`Server error ${response.status}: ${errText}`);
+      return;
+    }
+
+    // ── Parse SSE stream line-by-line ────────────────────────────────────────
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    console.log('[ITINERARY] Stream reader attached — reading chunks…');
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        console.log('[ITINERARY] Stream ended (reader done).');
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      console.log('[ITINERARY] Raw chunk received, buffer length:', buffer.length);
+
+      // Process all complete SSE lines in the buffer
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep the incomplete last line
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+
+        const jsonStr = trimmed.slice(5).trim();
+        if (!jsonStr) continue;
+
+        let event;
+        try {
+          event = JSON.parse(jsonStr);
+        } catch (e) {
+          console.warn('[ITINERARY] Failed to parse SSE JSON:', jsonStr, e);
+          continue;
+        }
+
+        console.log('[ITINERARY] SSE event received:', event.stage, event);
+        handleEvent(event);
+      }
+    }
+
+  } catch (err) {
+    console.error('[ITINERARY] Fetch/stream error:', err);
+    showError(`Connection error: ${err.message}. Is the server running?`);
+  }
+}
+
+// ── Event dispatcher ──────────────────────────────────────────────────────────
+function handleEvent(event) {
+  const stage = event.stage;
+  console.log(`[ITINERARY] handleEvent: stage="${stage}"`);
+
+  switch (stage) {
+
+    case 'status': {
+      const msg = event.msg || '';
+      console.log('[ITINERARY] Status update:', msg);
+      stageHistory.push(msg);
+
+      // Map message → loader stage
+      const sid = resolveStageId(msg);
+      if (sid) activateStage(sid);
+
+      // If first day hasn't appeared yet, update loader title
+      if (dayCount === 0) {
+        const title = document.querySelector('.loader-title');
+        if (title) title.textContent = msg.replace(/^[^\w]*/, '');
+      }
+      break;
+    }
+
+    case 'day': {
+      console.log('[ITINERARY] Received day:', event.day?.day_number, event.day?.day_label);
+      activateStage('streaming');
+
+      // Hide loader once first day arrives
+      if (dayCount === 0) {
+        console.log('[ITINERARY] First day received — hiding loader, showing days section');
+        document.getElementById('loader-section').classList.add('hidden');
+        document.getElementById('days-section').classList.remove('hidden');
+      }
+
+      renderDay(event.day);
+      dayCount++;
+      break;
+    }
+
+    case 'meta': {
+      console.log('[ITINERARY] Received meta event:', {
+        overflow: (event.overflow_places || []).length,
+        packing:  (event.packing_tips    || []).length,
+        general:  (event.general_tips    || []).length,
+      });
+
+      renderTripSummary(event.trip_summary || {});
+      renderOverflow(event.overflow_places || []);
+      renderTips(event.packing_tips || [], event.general_tips || []);
+      break;
+    }
+
+    case 'done': {
+      console.log('[ITINERARY] Pipeline done — marking all stages complete');
+      markAllStagesDone();
+      document.getElementById('loader-section').classList.add('hidden');
+      document.getElementById('done-banner').classList.add('show');
+      break;
+    }
+
+    case 'error': {
+      console.error('[ITINERARY] Pipeline error event:', event.msg);
+      document.getElementById('loader-section').classList.add('hidden');
+      showError(`Pipeline error: ${event.msg}`);
+      break;
+    }
+
+    default:
+      console.warn('[ITINERARY] Unknown event stage:', stage);
+  }
+}
+
+// ── Renderers ──────────────────────────────────────────────────────────────────
+
+function renderTripSummary(summary) {
+  console.log('[ITINERARY] Rendering trip summary:', summary);
+  const bar  = document.getElementById('trip-summary-bar');
+  const grid = document.getElementById('summary-grid');
+
+  const chips = [
+    { label: 'City',      val: summary.city        || '—' },
+    { label: 'Dates',     val: summary.start_date && summary.end_date
+                               ? `${summary.start_date} → ${summary.end_date}` : '—' },
+    { label: 'Duration',  val: summary.trip_days   ? `${summary.trip_days} day(s)` : '—' },
+    { label: 'Travellers',val: buildTravellerStr(summary.travellers) },
+    { label: 'Style',     val: (summary.trip_style || []).join(', ') || '—' },
+    { label: 'Budget',    val: summary.budget_level || '—' },
+  ];
+
+  grid.innerHTML = chips.map(c => `
+    <div class="summary-chip">
+      <span class="sc-label">${c.label}</span>
+      <span class="sc-val">${c.val}</span>
+    </div>
+  `).join('');
+
+  const weatherNote = document.getElementById('weather-summary-note');
+  if (summary.overall_weather_summary) {
+    weatherNote.textContent = `🌤 ${summary.overall_weather_summary}`;
+    weatherNote.style.display = 'block';
+  }
+
+  bar.classList.add('show');
+}
+
+function buildTravellerStr(t) {
+  if (!t) return '—';
+  const parts = [];
+  if (t.adults)   parts.push(`${t.adults} adult${t.adults > 1 ? 's' : ''}`);
+  if (t.children) parts.push(`${t.children} child${t.children > 1 ? 'ren' : ''}`);
+  return parts.join(', ') || '—';
+}
+
+function renderDay(day) {
+  console.log(`[ITINERARY] Rendering Day ${day.day_number}: "${day.day_label}" — ${(day.slots || []).length} slots`);
+
+  const container = document.getElementById('days-container');
+
+  const card = document.createElement('div');
+  card.className = 'day-card';
+  card.id        = `day-${day.day_number}`;
+
+  const slotsHtml = (day.slots || []).map(s => renderSlotHtml(s)).join('');
+  const kmBadge   = day.estimated_driving_km != null
+    ? `<span class="badge badge-km">🚗 ${day.estimated_driving_km} km</span>` : '';
+  const actBadge  = day.activity_count != null
+    ? `<span class="badge badge-acts">🏛 ${day.activity_count} activities</span>` : '';
+
+  card.innerHTML = `
+    <div class="day-header" onclick="toggleDay(${day.day_number})">
+      <div class="day-header-left">
+        <div class="day-number">Day ${day.day_number}</div>
+        <div class="day-date">${escHtml(day.day_label || day.date || '')}</div>
+        <div class="day-theme">${escHtml(day.theme || '')}</div>
+      </div>
+      <div class="day-badges">
+        ${kmBadge}${actBadge}
+        <span class="day-expand-icon open" id="expand-icon-${day.day_number}">▼</span>
+      </div>
+    </div>
+    ${day.weather_note ? `
+    <div class="day-weather">
+      <span class="day-weather-icon">⛅</span>
+      <span>${escHtml(day.weather_note)}</span>
+    </div>` : ''}
+    <div class="slots-list" id="slots-${day.day_number}">
+      ${slotsHtml}
+    </div>
+  `;
+
+  container.appendChild(card);
+  console.log(`[ITINERARY]   Day ${day.day_number} card appended to DOM`);
+}
+
+function toggleDay(dayNum) {
+  const slots = document.getElementById(`slots-${dayNum}`);
+  const icon  = document.getElementById(`expand-icon-${dayNum}`);
+  if (!slots) return;
+  const hidden = slots.style.display === 'none';
+  slots.style.display = hidden ? '' : 'none';
+  icon.classList.toggle('open', hidden);
+  console.log(`[ITINERARY] Day ${dayNum} toggled — now ${hidden ? 'open' : 'closed'}`);
+}
+
+function renderSlotHtml(slot) {
+  const typeKey  = slot.type || 'activity';
+  const dotClass = `dot-${typeKey}`;
+  const mv       = slot.is_must_visit ? '<span class="must-badge">♥ Must Visit</span>' : '';
+
+  // Place meta tags (from enriched place_details)
+  let metaTags = '';
+  const pd = slot.place_details;
+  if (pd) {
+    if (pd.rating)   metaTags += `<span class="place-tag rating">⭐ ${pd.rating}</span>`;
+    if (pd.category) metaTags += `<span class="place-tag cat">${escHtml(pd.category)}</span>`;
+  }
+
+  // Tips
+  const tips = (slot.tips || []).map(t =>
+    `<div class="tip-item">${escHtml(t)}</div>`
+  ).join('');
+
+  // Weather consideration
+  const wc = slot.weather_consideration
+    ? `<div class="weather-flag">⛅ ${escHtml(slot.weather_consideration)}</div>` : '';
+
+  return `
+    <div class="slot">
+      <span class="slot-type-dot ${dotClass}"></span>
+      <div class="slot-time">${escHtml(slot.time_slot || '')}</div>
+      <div class="slot-content">
+        <div class="slot-name">
+          ${escHtml(slot.place_name || '—')}
+          ${mv}
+        </div>
+        ${metaTags ? `<div class="place-meta">${metaTags}</div>` : ''}
+        ${slot.notes ? `<div class="slot-notes">${escHtml(slot.notes)}</div>` : ''}
+        ${wc}
+        ${tips ? `<div class="slot-tips">${tips}</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderOverflow(places) {
+  if (!places.length) return;
+  console.log('[ITINERARY] Rendering', places.length, 'overflow places');
+
+  const section   = document.getElementById('overflow-section');
+  const container = document.getElementById('overflow-container');
+
+  container.innerHTML = places.map(p => `
+    <div class="overflow-card">
+      <div class="overflow-title">${escHtml(p.place_name || '—')}</div>
+      <div class="overflow-reason">${escHtml(p.reason || '')}</div>
+    </div>
+  `).join('');
+
+  section.classList.remove('hidden');
+}
+
+function renderTips(packing, general) {
+  if (!packing.length && !general.length) return;
+  console.log('[ITINERARY] Rendering tips — packing:', packing.length, '| general:', general.length);
+
+  const section = document.getElementById('tips-section');
+  const grid    = document.getElementById('tips-grid');
+
+  const boxes = [];
+  if (packing.length) {
+    boxes.push(`
+      <div class="tips-box">
+        <h3>🎒 Packing Tips</h3>
+        <ul>${packing.map(t => `<li>${escHtml(t)}</li>`).join('')}</ul>
+      </div>
+    `);
+  }
+  if (general.length) {
+    boxes.push(`
+      <div class="tips-box">
+        <h3>💡 General Tips</h3>
+        <ul>${general.map(t => `<li>${escHtml(t)}</li>`).join('')}</ul>
+      </div>
+    `);
+  }
+
+  grid.innerHTML = boxes.join('');
+  section.classList.remove('hidden');
+}
+
+// ── Utility ──────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  if (typeof str !== 'string') return String(str ?? '');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+console.log('[ITINERARY] Script loaded — waiting for DOMContentLoaded');
+</script>
+</body>
+</html>

@@ -62,9 +62,9 @@ from google.genai import types as genai_types
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(dotenv_path=ROOT / ".env")
 
-# ─── Model config ─────────────────────────────────────────────────────────────
+# ─── Model config (driven by PIPELINE_LLM env var set in main.py) ───────────────
+# Import lazily inside functions so env var is read at call-time, not import-time.
 
-MODEL_NAME  = "gemini-2.5-flash-preview-05-20"
 TEMPERATURE = 0.2        # Low → consistent, rule-following output
 MAX_TOKENS  = 4096
 
@@ -277,7 +277,7 @@ def _fmt_temp(daily: dict, i: int) -> tuple[str, str]:
     ft_min = _dval(daily, "apparent_temperature_min", i)
     return (
         f"{t_min}–{t_max}°C" if t_max is not None else "N/A",
-        f"{ft_min}–{ft_max}°C" if ft_max is not None else "N/A",
+        f"{ft_min}–{ft_max}°C" if ft_min is not None else "N/A",
     )
 
 
@@ -535,38 +535,64 @@ def build_weather_brief(
     """
     trip_types = trip_types or []
 
-    today             = date.today()
-    start             = date.fromisoformat(start_date)
-    end               = date.fromisoformat(end_date)
-    trip_days         = (end - start).days + 1
-    days_until_trip   = (start - today).days
-    is_historical     = days_until_trip > FORECAST_HORIZON_DAYS
+    import time as _t
+    _fn_start = _t.time()
+    from datetime import datetime as _dt
+    def _ts(): return _dt.now().strftime("%H:%M:%S.%f")[:-3]
+
+    today           = date.today()
+    start           = date.fromisoformat(start_date)
+    end             = date.fromisoformat(end_date)
+    trip_days       = (end - start).days + 1
+    days_until_trip = (start - today).days
+    is_historical   = not (0 <= days_until_trip <= FORECAST_HORIZON_DAYS)
+
+    print(f"\n{'='*64}")
+    print(f"[WEATHER] ► START  {_ts()}")
+    print(f"[WEATHER]   city={city_name} | lat={lat} | lng={lng} | tz={timezone}")
+    print(f"[WEATHER]   dates={start_date} → {end_date} ({trip_days} days) | days_until={days_until_trip}")
+    print(f"[WEATHER]   mode={'HISTORICAL (ERA5)' if is_historical else 'LIVE FORECAST'}")
+    print(f"[WEATHER]   types={trip_types} | adults={num_adults} | children={num_children}")
+    print(f"{'='*64}")
 
     # ── 1. Fetch weather data ─────────────────────────────────────────────────
+    _t1 = _t.time()
     if not is_historical:
-        print(f"📅 Trip starts in {days_until_trip} day(s) → using live forecast…")
+        print(f"\n[WEATHER] Step 1: Live forecast API  |  START {_ts()}")
+        print(f"[WEATHER]   Trip starts in {days_until_trip} day(s) — fetching Open-Meteo forecast…")
         daily = _fetch_forecast_daily(lat, lng, start_date, end_date, timezone)
+        print(f"[WEATHER] Step 1 ✅  |  END {_ts()}  |  elapsed={_t.time()-_t1:.2f}s  |  {len(daily)} field(s)")
     else:
-        print(f"📅 Trip starts in {days_until_trip} day(s) (> {FORECAST_HORIZON_DAYS}) "
-              f"→ using historical data (ERA5, past 2 years)…")
+        mode = "past date" if days_until_trip < 0 else f"far future ({days_until_trip}d out)"
+        print(f"\n[WEATHER] Step 1: Historical ERA5 archive ({mode})  |  START {_ts()}")
 
-        print("   Fetching year −1…")
+        _ty1 = _t.time()
+        print(f"[WEATHER]   Fetching year −1…")
         year1 = _fetch_historical_daily(lat, lng, start, end, year_offset=1, timezone=timezone)
+        print(f"[WEATHER]   Year −1 done  |  elapsed={_t.time()-_ty1:.2f}s")
 
-        print("   Fetching year −2…")
+        _ty2 = _t.time()
+        print(f"[WEATHER]   Fetching year −2…")
         try:
             year2 = _fetch_historical_daily(lat, lng, start, end, year_offset=2, timezone=timezone)
+            print(f"[WEATHER]   Year −2 done  |  elapsed={_t.time()-_ty2:.2f}s")
         except Exception as exc:
-            print(f"   ⚠️  Year −2 fetch failed ({exc}); using year −1 data only.")
-            year2 = year1   # graceful fallback
+            print(f"[WEATHER]   ⚠️  Year −2 fetch failed ({exc}) — using year −1 only")
+            year2 = year1
 
         daily = _average_two_years(year1, year2)
+        print(f"[WEATHER] Step 1 ✅  |  END {_ts()}  |  total elapsed={_t.time()-_t1:.2f}s")
 
     # ── 2. Build human-readable weather digest ────────────────────────────────
-    print(f"🌤️  Building weather digest ({trip_days} day(s))…")
+    _t2 = _t.time()
+    print(f"\n[WEATHER] Step 2: Build weather digest  |  START {_ts()}")
     weather_digest = _build_weather_digest(daily, start, is_historical)
+    print(f"[WEATHER] Step 2 ✅  |  END {_ts()}  |  elapsed={_t.time()-_t2:.2f}s  |  digest chars={len(weather_digest)}")
+    print(f"[WEATHER]   Weather digest preview:\n{weather_digest[:800]}{'...' if len(weather_digest)>800 else ''}")
 
     # ── 3. Build prompt ───────────────────────────────────────────────────────
+    _t3 = _t.time()
+    print(f"\n[WEATHER] Step 3: Build LLM prompt  |  START {_ts()}")
     prompt = _build_prompt(
         city_name      = city_name,
         trip_days      = trip_days,
@@ -578,27 +604,29 @@ def build_weather_brief(
         is_historical  = is_historical,
         weather_digest = weather_digest,
     )
+    print(f"[WEATHER] Step 3 ✅  |  END {_ts()}  |  elapsed={_t.time()-_t3:.2f}s  |  prompt chars={len(prompt)}")
 
-    # ── 4. Call Gemini 2.5 Flash ──────────────────────────────────────────────
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError(
-            "GEMINI_API_KEY not set in .env. "
-            "Get a key at https://aistudio.google.com/app/apikey"
-        )
+    # ── 4. Call LLM ───────────────────────────────────────────────────────────
+    from pipeline.model_config import get_llm_client, get_model_name, call_llm, provider_label
+    model_name = get_model_name()
+    client     = get_llm_client()
+    _t4 = _t.time()
+    print(f"\n[WEATHER] Step 4: LLM call  |  model={provider_label()}  |  START {_ts()}")
 
-    print(f"🤖 Calling {MODEL_NAME}…")
-    client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model    = MODEL_NAME,
-        contents = prompt,
-        config   = genai_types.GenerateContentConfig(
-            temperature       = TEMPERATURE,
-            max_output_tokens = MAX_TOKENS,
-        ),
+    brief = call_llm(
+        client      = client,
+        model_name  = model_name,
+        prompt      = prompt,
+        temperature = TEMPERATURE,
+        max_tokens  = MAX_TOKENS,
+        json_mode   = False,
     )
-    brief = response.text.strip()
-    print(f"✅ Weather brief generated ({len(brief)} chars)")
+
+    _t4_elapsed = _t.time() - _t4
+    _fn_elapsed = _t.time() - _fn_start
+    print(f"[WEATHER] Step 4 ✅  |  END {_ts()}  |  LLM elapsed={_t4_elapsed:.2f}s")
+    print(f"[WEATHER] ◄ TOTAL elapsed={_fn_elapsed:.2f}s  |  brief chars={len(brief)}")
+    print(f"{'='*64}\n")
     return brief
 
 

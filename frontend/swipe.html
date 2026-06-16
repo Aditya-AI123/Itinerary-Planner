@@ -381,7 +381,7 @@
         Submit Place Preferences
       </button>
       <div class="submit-hint" id="submit-hint">
-        Rate at least <span class="count" id="submit-count">0</span> / 5 places to unlock
+        Rate at least <span class="count">0</span>&nbsp;/&nbsp;5 places to unlock
       </div>
     </div>
   </div>
@@ -390,7 +390,7 @@
   <div id="results-section" class="results-card hidden">
     <div class="results-icon">🎉</div>
     <h2>All done!</h2>
-    <p>Your place selections have been saved and are ready for the itinerary planner.</p>
+    <p>Your place selections have been saved. Building your itinerary now…</p>
 
     <div class="result-section">
       <h3>♥ Must-Visit (<span id="must-count">0</span>)</h3>
@@ -402,7 +402,8 @@
       <ul id="liked-list"></ul>
     </div>
 
-    <button class="btn-done" onclick="location.href='/frontend/index.html'">Plan Another Trip</button>
+    <button class="btn-done" id="btn-go-itinerary" onclick="location.href='/frontend/itinerary.html'">Plan My Itinerary →</button>
+    <p style="font-size:0.78rem;color:#888;margin-top:8px;text-align:center">Redirecting automatically in <span id="redirect-countdown">3</span>s…</p>
   </div>
 
 </div>
@@ -481,9 +482,12 @@
   /* ── Render card ──────────────────────────────────── */
   function renderCard(idx) {
     if (idx >= places.length) {
-      // Auto-click: all cards done — trigger submit regardless of count
-      document.getElementById('btn-submit-prefs').disabled = false;
-      document.getElementById('btn-submit-prefs').click();
+      // All cards done — auto-submit if button exists
+      const submitBtn = document.getElementById('btn-submit-prefs');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.click();
+      }
       return;
     }
     currentIdx = idx;
@@ -623,9 +627,17 @@
   /* ── Actions ──────────────────────────────────────── */
   function action(type) {
     const place = places[currentIdx];
+    if (!place) {
+      console.warn('[SWIPE] action() called but place at index', currentIdx, 'is undefined. Places loaded:', places.length);
+      return;
+    }
+    console.log('[SWIPE] action:', type, '| place:', place.name, '| idx:', currentIdx);
+
     if (type === 'like') liked.push(place);
     else if (type === 'must') mustVisit.push(place);
     // 'skip' — just move on
+
+    console.log('[SWIPE] liked:', liked.length, '| mustVisit:', mustVisit.length);
 
     // Persist intermediate state
     saveSelections();
@@ -639,17 +651,20 @@
   function updateSubmitBtn() {
     const total = liked.length + mustVisit.length;
     const MIN = 5;
-    const btn = document.getElementById('btn-submit-prefs');
+    const btn  = document.getElementById('btn-submit-prefs');
     const hint = document.getElementById('submit-hint');
-    const countEl = document.getElementById('submit-count');
+
+    if (!btn || !hint) {
+      console.warn('[SWIPE] updateSubmitBtn: DOM elements not ready yet, skipping.');
+      return;
+    }
 
     btn.disabled = total < MIN;
-    countEl.textContent = total;
 
     if (total >= MIN) {
       hint.innerHTML = `<span class="count">${total}</span> places selected — ready to submit!`;
     } else {
-      hint.innerHTML = `Rate at least <span class="count">${total}</span> / ${MIN} places to unlock`;
+      hint.innerHTML = `Rate at least <span class="count">${total}</span>&nbsp;/&nbsp;${MIN} places to unlock`;
     }
   }
 
@@ -678,6 +693,18 @@
     document.getElementById('liked-list').innerHTML = fmt(liked);
 
     saveSelections();
+
+    // Auto-redirect to itinerary page after 3 seconds
+    let countdown = 3;
+    const countEl = document.getElementById('redirect-countdown');
+    const timer = setInterval(() => {
+      countdown--;
+      if (countEl) countEl.textContent = countdown;
+      if (countdown <= 0) {
+        clearInterval(timer);
+        location.href = '/frontend/itinerary.html';
+      }
+    }, 1000);
   }
 
   /* ── Run ──────────────────────────────────────────── */
