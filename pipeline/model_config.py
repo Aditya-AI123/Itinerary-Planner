@@ -27,6 +27,14 @@ from pathlib import Path
 GEMINI_MODEL = "gemini-2.5-flash"
 LLAMA_MODEL  = "llama-3.3-70b-versatile"
 
+# ─── Token limits per provider ────────────────────────────────────────────────
+# Gemini 2.5 Flash supports up to 65,536 output tokens.
+# Groq llama-3.3-70b-versatile hard-caps at 32,768 output tokens — sending more
+# causes a 400 error: "'max_tokens' must be <= 32768".
+
+GEMINI_MAX_TOKENS = 65536   # Gemini 2.5 Flash limit
+LLAMA_MAX_TOKENS  = 32768   # Groq llama-3.3-70b-versatile hard cap
+
 # ─── Provider detection ───────────────────────────────────────────────────────
 
 def _active_provider() -> str:
@@ -40,6 +48,22 @@ def _active_provider() -> str:
 def get_model_name() -> str:
     """Return the model name string for the active provider."""
     return LLAMA_MODEL if _active_provider() == "llama" else GEMINI_MODEL
+
+
+def get_max_tokens(agent_default: int | None = None) -> int:
+    """
+    Return the correct max_tokens for the active provider.
+
+    Groq hard-caps llama-3.3-70b-versatile at 32,768.
+    Gemini 2.5 Flash supports up to 65,536.
+
+    Pass agent_default to use a smaller value (e.g. for trip_planner which
+    doesn't need the full budget). If None, the provider max is used.
+    """
+    provider_max = LLAMA_MAX_TOKENS if _active_provider() == "llama" else GEMINI_MAX_TOKENS
+    if agent_default is None:
+        return provider_max
+    return min(agent_default, provider_max)
 
 
 def get_llm_client():

@@ -82,10 +82,11 @@ DB_PATH  = DATA_DIR / "places_database.json"
 load_dotenv(dotenv_path=ROOT / ".env")
 
 # ─── Model config ─────────────────────────────────────────────────────────────
+# MAX_TOKENS is resolved at call-time via model_config.get_max_tokens() so it
+# respects the active provider's hard limit (Groq: 32,768 | Gemini: 65,536).
 
-MODEL_NAME   = "gemini-2.5-flash"
-TEMPERATURE  = 0.5    # Creative scheduling, still consistent
-MAX_TOKENS   = 65536  # Gemini 2.5 Flash max — needed for large multi-day JSON itineraries
+MODEL_NAME   = "gemini-2.5-flash"   # legacy — overridden by model_config at call-time
+TEMPERATURE  = 0.5                   # Creative scheduling, still consistent
 
 # ─── Categories that are food/leisure (do not count toward activity cap) ──────
 
@@ -536,9 +537,15 @@ def build_itinerary(
     )
 
     # ── 4. Call LLM (Gemini or Llama, driven by PIPELINE_LLM toggle) — with truncation recovery ─
-    from pipeline.model_config import get_llm_client, get_model_name, call_llm, provider_label, _active_provider
+    from pipeline.model_config import (
+        get_llm_client, get_model_name, call_llm, provider_label,
+        _active_provider, get_max_tokens,
+    )
     _model_name = get_model_name()
     _client     = get_llm_client()
+    _max_tokens = get_max_tokens()   # 32,768 for Llama/Groq | 65,536 for Gemini
+
+    print(f"[ITINERARY] LLM backend: {provider_label()} | max_tokens={_max_tokens}")
 
     def _call_llm_with_truncation_check(prompt_text: str, label: str = "") -> tuple[str, bool]:
         """Call the active LLM and return (raw_text, was_truncated)."""
@@ -553,7 +560,7 @@ def build_itinerary(
                 model_name  = _model_name,
                 prompt      = prompt_text,
                 temperature = TEMPERATURE,
-                max_tokens  = MAX_TOKENS,
+                max_tokens  = _max_tokens,
                 json_mode   = True,
             )
         else:
@@ -565,7 +572,7 @@ def build_itinerary(
                 contents = prompt_text,
                 config   = _genai_types.GenerateContentConfig(
                     temperature        = TEMPERATURE,
-                    max_output_tokens  = MAX_TOKENS,
+                    max_output_tokens  = _max_tokens,
                     response_mime_type = "application/json",
                 ),
             )
@@ -582,6 +589,7 @@ def build_itinerary(
 
         print(f"   Raw response: {len(text)} chars | truncated={truncated}")
         return text, truncated
+
 
     raw_text, truncated = _call_llm_with_truncation_check(prompt, label="attempt-1")
 

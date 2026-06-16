@@ -403,7 +403,7 @@
     </div>
 
     <button class="btn-done" id="btn-go-itinerary" onclick="location.href='/frontend/itinerary.html'">Plan My Itinerary →</button>
-    <p style="font-size:0.78rem;color:#888;margin-top:8px;text-align:center">Redirecting automatically in <span id="redirect-countdown">3</span>s…</p>
+
   </div>
 
 </div>
@@ -693,18 +693,6 @@
     document.getElementById('liked-list').innerHTML = fmt(liked);
 
     saveSelections();
-
-    // Auto-redirect to itinerary page after 3 seconds
-    let countdown = 3;
-    const countEl = document.getElementById('redirect-countdown');
-    const timer = setInterval(() => {
-      countdown--;
-      if (countEl) countEl.textContent = countdown;
-      if (countdown <= 0) {
-        clearInterval(timer);
-        location.href = '/frontend/itinerary.html';
-      }
-    }, 1000);
   }
 
   /* ── Run ──────────────────────────────────────────── */

@@ -446,7 +446,7 @@ def build_trip_brief(
     place_details = _load_place_details(city_slug, ordered_ids)
     print(f"[TRIP_PLANNER] Step 3 ✅  |  END {_ts()}  |  elapsed={_t.time()-_t3:.2f}s")
     print(f"[TRIP_PLANNER]   {len(place_details)} place records loaded")
-    for pd in place_details:
+    for pd in place_details.values():
         print(f"[TRIP_PLANNER]   • {pd.get('place_id','?')[:20]}  name='{pd.get('name','?')}'  cat='{pd.get('category','?')}'")
 
     # ── 4. Build distance table string ──────────────────────────────────────

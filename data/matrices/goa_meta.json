@@ -1,0 +1,353 @@
+{
+  "city_slug": "goa",
+  "city_name": "Goa",
+  "computed_at": "2026-06-16T12:25:25.500074+00:00",
+  "total_places": 48,
+  "mode": "driving",
+  "unit": "meters",
+  "no_route_value": -1.0,
+  "place_ids": [
+    "ChIJa72MxnXBvzsRHHtpszB2g6M",
+    "ChIJQ4srFBimvzsRJQI7KOdIlP0",
+    "ChIJiQKbufK-vzsRuKcVn2hWgB4",
+    "ChIJ2SyWw3XBvzsREmaXkve8H78",
+    "ChIJ7YKn9fG-vzsRqG6gJbaQxPs",
+    "ChIJAxaYkwrAvzsRMoGzIYj2STg",
+    "ChIJsz_IVjXAvzsRKB-KUSodijs",
+    "ChIJ2dIMYnfBvzsREa3ZA2AyWyw",
+    "ChIJz04iQirBvzsRrvhG5Zxummo",
+    "ChIJ4YkQ7NSUvzsRMYrf76ZcxoM",
+    "ChIJrYu521bAvzsRMZ5n0rjkYnA",
+    "ChIJcQ-Ghuy6vzsRuM81ZARgpNw",
+    "ChIJn5OqQp7BvzsR7YB4KherD64",
+    "ChIJM0ixxcLAvzsR2Z-xsgKlCBA",
+    "ChIJo3Ithhi0vzsRNQmtLCAb3rU",
+    "ChIJZ7IctYzAvzsRGFUrmuUJx6s",
+    "ChIJ7Z29tQXBvzsRp09oIDUjdOU",
+    "ChIJsbm561bGvzsR2uhVi1Uzo9E",
+    "ChIJVVVVVZUGvzsRsTuQyBI93Ro",
+    "ChIJd80W8otYvjsRt2iX35P2fJM",
+    "ChIJrV85rh75vjsRUHVODTEwKkY",
+    "ChIJ6xFV8hFXvjsRKITFFevXu9A",
+    "ChIJuT9rLsHrvzsRdSNYqdI0qUQ",
+    "ChIJscMlMqW4vzsRe9bDtWIleIQ",
+    "ChIJX-BiazLBvzsRESQZALDpctQ",
+    "ChIJs_yJ2ljrvzsRwK8iiy9B2Uc",
+    "ChIJMS8RWSXqvzsRD_BatlAomOk",
+    "ChIJIxO_HDKRvzsRsRaBKT8EtAA",
+    "ChIJfyy96YXAvzsRmkSkaEP2nj8",
+    "ChIJNb7bl2jpvzsRQJxMZFXA3vo",
+    "ChIJnWzIpH2_vzsRzGAyGkfyoro",
+    "ChIJzeAYgg7rvzsRqtaIhr3KLeQ",
+    "ChIJRTUYPI5MvjsRxAHlDWzTpYY",
+    "ChIJH505aRzrvzsRLJHXglaeaZc",
+    "ChIJ83w7D1frvzsRPixvtHaAVxo",
+    "ChIJh3cEGLbrvzsRKnYbxsNx5nI",
+    "ChIJ9Vry1uvAvzsR9F1n0OmemmA",
+    "ChIJFY-F1BLpvzsRyVdPrarA5bs",
+    "ChIJqQuF_erpvzsRAsvHFxmCsfQ",
+    "ChIJX6A4hxvqvzsR6ypElyeDifE",
+    "ChIJcek9Ehm0vzsRM7kscLekX-U",
+    "ChIJYziUGqDBvzsROuOGBsGHaDg",
+    "ChIJWUM-d5rrvzsRpCPgq2akWDE",
+    "ChIJdzWLsxzqvzsRF6bC5-mKXSQ",
+    "ChIJE8eTqebqvzsRfdJVSlfrikk",
+    "ChIJy1_14WzAvzsR5PRbb3en5a8",
+    "ChIJZfvTVevAvzsRwOwX7dTOSg8",
+    "ChIJZxMOPOTBvzsRRUxXK__zclk"
+  ],
+  "place_names": [
+    "Fort Aguada",
+    "Dudhsagar Falls",
+    "Basilica of Bom Jesus",
+    "Sinquerim Fort",
+    "St. Augustine Tower Goa",
+    "Houses of Goa Museum",
+    "Museum of Goa, MOG",
+    "AAA All About Alcohol Museum",
+    "VOLA ART ESCAPE",
+    "The Cube Gallery",
+    "Shri Shantadurga Temple",
+    "Safa Masjid",
+    "Sinquerim Beach",
+    "Miramar Beach",
+    "Colva Beach",
+    "Campal Gardens",
+    "Art Park",
+    "Japanese Garden",
+    "Bhagwan Mahavir Wildlife Sanctuary",
+    "Cotigao Wildlife Sanctuary",
+    "Netravali Wildlife Sanctuary",
+    "Bamanbudo Waterfall",
+    "Goa Water Sports Activities and Boat Tours",
+    "Adventure Breaks",
+    "goa adventure and watersports",
+    "Thunder world Goa Amusement Parks",
+    "Splashdown Waterpark",
+    "Farm 33 Waterpark",
+    "Make It Happen - Heritage Trails & Walking Tours Goa",
+    "Vagator Hill View",
+    "YM Ecotrails - Tour Operator in Goa for Trekking Adventures",
+    "Maka Zai Goan Restaurant & Feni Cocktails",
+    "The Fishermans Wharf",
+    "The Second House",
+    "Bloom & Brew - NOFC",
+    "G-Shot Coffee Roastery & Cafe",
+    "Cafe Bodega",
+    "Anjuna Flea Market",
+    "The Goa Collective Bazar",
+    "Baga Central",
+    "Roof Top Lounge",
+    "Sinq Night Club",
+    "Hammerzz Nightclub",
+    "Club Titos",
+    "Mapusa Municipal Market",
+    "Mall De Goa",
+    "Caculo Mall",
+    "Valanka Shopping Mall"
+  ],
+  "place_coords": [
+    [
+      15.492251900000001,
+      73.77374619999999
+    ],
+    [
+      15.314437499999997,
+      74.3143073
+    ],
+    [
+      15.5008238,
+      73.9114061
+    ],
+    [
+      15.4984466,
+      73.7663559
+    ],
+    [
+      15.5005094,
+      73.9064616
+    ],
+    [
+      15.5303209,
+      73.8406749
+    ],
+    [
+      15.525516,
+      73.79526299999999
+    ],
+    [
+      15.5095841,
+      73.7693015
+    ],
+    [
+      15.514101,
+      73.7685675
+    ],
+    [
+      15.6010067,
+      73.8435365
+    ],
+    [
+      15.3962235,
+      73.9852776
+    ],
+    [
+      15.406563599999998,
+      73.9999756
+    ],
+    [
+      15.499146399999999,
+      73.76746659999999
+    ],
+    [
+      15.482653099999999,
+      73.80735159999999
+    ],
+    [
+      15.280531600000002,
+      73.91199449999999
+    ],
+    [
+      15.49806,
+      73.818748
+    ],
+    [
+      15.528369399999999,
+      73.8343678
+    ],
+    [
+      15.4069725,
+      73.7871306
+    ],
+    [
+      15.333901500000001,
+      74.2883536
+    ],
+    [
+      14.976030499999997,
+      74.2061931
+    ],
+    [
+      15.0836711,
+      74.2320539
+    ],
+    [
+      15.060051500000002,
+      74.1595025
+    ],
+    [
+      15.545046600000001,
+      73.7625115
+    ],
+    [
+      15.553041899999998,
+      73.8295697
+    ],
+    [
+      15.513273499999997,
+      73.7759853
+    ],
+    [
+      15.561347699999999,
+      73.77035289999999
+    ],
+    [
+      15.579003,
+      73.758791
+    ],
+    [
+      15.6789485,
+      73.9464268
+    ],
+    [
+      15.498400499999999,
+      73.8315117
+    ],
+    [
+      15.6009571,
+      73.7342742
+    ],
+    [
+      15.488970300000002,
+      73.9300236
+    ],
+    [
+      15.5926798,
+      73.759635
+    ],
+    [
+      15.157618300000001,
+      73.95219089999999
+    ],
+    [
+      15.5505797,
+      73.7890556
+    ],
+    [
+      15.591582799999998,
+      73.77313699999999
+    ],
+    [
+      15.598596800000001,
+      73.77205630000002
+    ],
+    [
+      15.493881,
+      73.8275781
+    ],
+    [
+      15.572068900000001,
+      73.7419735
+    ],
+    [
+      15.5931492,
+      73.74235519999999
+    ],
+    [
+      15.5593122,
+      73.7539688
+    ],
+    [
+      15.276505999999998,
+      73.916574
+    ],
+    [
+      15.501389,
+      73.77164599999999
+    ],
+    [
+      15.564992499999997,
+      73.7508447
+    ],
+    [
+      15.5563188,
+      73.7531612
+    ],
+    [
+      15.588376299999997,
+      73.8127861
+    ],
+    [
+      15.525825199999998,
+      73.8271347
+    ],
+    [
+      15.486437800000001,
+      73.8178846
+    ],
+    [
+      15.537938899999999,
+      73.76447019999999
+    ]
+  ],
+  "categories": [
+    "Tourist Attraction",
+    "Tourist Attraction",
+    "Tourist Attraction",
+    "Tourist Attraction",
+    "Historic & Cultural",
+    "Museum",
+    "Art Gallery",
+    "Museum",
+    "Art Gallery",
+    "Art Gallery",
+    "Religious Site",
+    "Religious Site",
+    "Beach",
+    "Beach",
+    "Beach",
+    "Tourist Attraction",
+    "Park & Gardens",
+    "Park & Gardens",
+    "National Park",
+    "Tourist Attraction",
+    "Park & Gardens",
+    "Tourist Attraction",
+    "Adventure Sports",
+    "Adventure Sports",
+    "Point of Interest",
+    "Adventure & Thrill",
+    "Tourist Attraction",
+    "Adventure & Thrill",
+    "Point of Interest",
+    "Hiking & Trekking",
+    "Point of Interest",
+    "Restaurant",
+    "Restaurant",
+    "Restaurant",
+    "Café",
+    "Café",
+    "Café",
+    "Local Market",
+    "Local Market",
+    "Local Market",
+    "Bar & Nightlife",
+    "Nightclub",
+    "Nightclub",
+    "Nightclub",
+    "Local Market",
+    "Shopping",
+    "Shopping",
+    "Shopping"
+  ]
+}

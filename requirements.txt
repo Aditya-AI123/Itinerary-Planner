@@ -1,6 +1,7 @@
 requests==2.32.3
 python-dotenv==1.0.1
 python-slugify==8.0.4
-groq==0.11.0
-httpx==0.27.2
+groq==1.4.0          # groq 0.11.x passes 'proxies' to httpx which was removed in httpx>=0.28
+httpx==0.28.1        # google-genai requires >=0.28.1; groq>=1.x is compatible
 numpy==1.26.4
+google-genai==2.7.0
